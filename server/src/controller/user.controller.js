@@ -70,7 +70,7 @@ export const getFriend = async (req, res, next) => {
     );
     if (!user) throw new AppError("User not found", 404);
     const friends = user.friends;
-    if (friends.length === 0) throw new AppError("Friend empty", 404);
+    // if (friends.length === 0) throw new AppError("Friend is empty", 200);
     return successResponse(res, 200, friends);
   } catch (error) {
     next(error);
@@ -79,6 +79,7 @@ export const getFriend = async (req, res, next) => {
 
 export const getCollection = async (req, res, next) => {
   const userId = req.user._id;
+  const { type } = req.query;
   try {
     const user = await User.findById(userId)
       .select("savedAlbums")
@@ -96,7 +97,7 @@ export const getCollection = async (req, res, next) => {
       .select("title imageUrl createdBy")
       .populate("createdBy", "fullName");
 
-    const collection = [
+    const collections = [
       ...user.savedAlbums.map((album) => ({
         _id: album._id,
         title: album.title,
@@ -112,7 +113,65 @@ export const getCollection = async (req, res, next) => {
         type: "playlist",
       })),
     ];
-    return successResponse(res, 200, collection);
+    let filteredCollection = collections;
+    if (type === "album" || type === "playlist") {
+      filteredCollection = collections.filter((c) => c.type === type);
+    }
+    return successResponse(res, 200, filteredCollection);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getCollectionById = async (req, res, next) => {
+  const { id } = req.params;
+  let totalDuration = 0;
+  try {
+    const albumExist = await Album.exists({ _id: id });
+    const playlistExist = await Playlist.exists({ _id: id });
+    if (albumExist) {
+      const album = await Album.findById(id).populate({
+        path: "createdBy",
+        select: "fullName",
+      });
+      const songs = await Song.find({ album: id }).select(
+        "title duration performer played createdAt",
+      );
+      songs.map((song) => {
+        totalDuration += song.duration;
+      });
+      return successResponse(res, 200, {
+        ...album.toObject(),
+        songs,
+        collection: "album",
+        duration: totalDuration,
+      });
+    } else if (playlistExist) {
+      const playlist = await Playlist.findById(id).populate({
+        path: "songs",
+        populate: {
+          path: "song",
+          select: "title duration performer played",
+        },
+      }).populate({path: "createdBy", select: "fullName" });
+
+      const normalizedSongs = playlist.songs.map((song) => ({
+        ...song.song.toObject(),
+        addedBy: song.addedBy,
+        createdAt: song.addedAt,
+      }));
+
+      normalizedSongs.forEach((song) => {
+        totalDuration += song.duration;
+      });
+
+      return successResponse(res, 200, {
+        ...playlist.toObject(),
+        collection: "playlist",
+        songs: normalizedSongs,
+        duration: totalDuration,
+      });
+    }
   } catch (error) {
     next(error);
   }

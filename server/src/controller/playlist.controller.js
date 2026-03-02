@@ -16,10 +16,10 @@ export const getPlaylist = async (req, res, next) => {
       path: "songs",
       populate: {
         path: "song",
-        select: "title",
+        select: "title duration performer",
       },
     });
-    if (playlist.length === 0) throw new AppError("Playlist is empty", 200);
+    // if (playlist.length === 0) throw new AppError("Playlist is empty", 200);
     return successResponse(res, 200, playlist);
   } catch (error) {
     next(error);
@@ -29,13 +29,13 @@ export const getPlaylist = async (req, res, next) => {
 export const getPlaylistById = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const playlistExist = await Playlist.exists({ _id: id });
-    if (!playlistExist) throw new AppError("Playlist not found", 404);
+    // const playlistExist = await Playlist.exists({ _id: id });
+    // if (!playlistExist) throw new AppError("Playlist not found", 404);
     const playlist = await Playlist.findById(id).populate({
       path: "songs",
       populate: {
         path: "song",
-        select: "title duration",
+        select: "title duration performer played",
       },
     });
     let totalDuration = 0;
@@ -100,7 +100,7 @@ export const updatePlaylist = async (req, res, next) => {
 
   try {
     const playlist = await Playlist.findOne({ _id: id, createdBy: userId });
-    if (!playlist) throw new AppError("Playlist not found", 404);
+    // if (!playlist) throw new AppError("Playlist not found", 404);
 
     if (title !== undefined) playlist.title = title;
     if (visibility !== undefined) playlist.visibility = visibility;
@@ -133,7 +133,7 @@ export const deletePlaylist = async (req, res, next) => {
       { _id: id, createdBy: userId },
       { session },
     );
-    if (!playlist) throw new AppError("Playlist not found", 404);
+    // if (!playlist) throw new AppError("Playlist not found", 404);
 
     await User.findByIdAndUpdate(
       userId,
@@ -158,8 +158,8 @@ export const addCollaboratorToPlaylist = async (req, res, next) => {
   const { playlistId, collaboratorId } = req.params;
   const userId = req.user._id;
   try {
-    const exist = await User.exists({ _id: collaboratorId });
-    if (!exist) throw new AppError("User not found", 404);
+    // const exist = await User.exists({ _id: collaboratorId });
+    // if (!exist) throw new AppError("User not found", 404);
 
     const playlist = await Playlist.findOneAndUpdate(
       {

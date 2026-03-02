@@ -9,7 +9,7 @@ export default function FeaturedSong({ featured }: any) {
         {featured.map((song: Song) => (
           <div
             key={song._id}
-            className="flex items-center bg-zinc-900/50 hover:bg-zinc-800/70 rounded-sm"
+            className="flex items-center h-16 bg-zinc-900/50 hover:bg-zinc-800/70 rounded-sm"
           >
             <img
               src={import.meta.env.VITE_DEFAULT_IMAGE}

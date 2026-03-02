@@ -12,7 +12,7 @@ dotenv.config();
 export const getAlbum = async (req, res, next) => {
   try {
     const album = await Album.find();
-    if (album.length === 0) throw new AppError("Album is empty", 200);
+    // if (album.length === 0) success("Album is empty", 200);
     return successResponse(res, 200, album);
   } catch (error) {
     console.error(error);
@@ -24,8 +24,10 @@ export const getAlbumById = async (req, res, next) => {
   try {
     const { id } = req.params;
     const album = await Album.findById(id);
-    if (!album) throw new AppError("Album not found", 404);
-    const songs = await Song.find({ album: id });
+    // if (!album) throw new AppError("Album not found", 404);
+    const songs = await Song.find({ album: id }).select(
+      "title duration performer played",
+    );
     let totalDuration = 0;
     songs.map((s) => {
       totalDuration += s.duration;
@@ -72,7 +74,7 @@ export const updateAlbum = async (req, res, next) => {
   try {
     if (!req.body) throw new AppError("You are not changing anything", 200);
     const album = await Album.findOne({ _id: id, createdBy: userId });
-    if (!album) throw new AppError("Album not found", 404);
+    // if (!album) throw new AppError("Album not found", 404);
 
     if (title !== undefined) album.title = title;
     if (visibility !== undefined) album.visibility = visibility;
@@ -104,7 +106,7 @@ export const deleteAlbum = async (req, res, next) => {
         session,
       },
     );
-    if (!album) throw new AppError("Album not found", 404);
+    // if (!album) throw new AppError("Album not found", 404);
 
     await Song.find({ album: id });
 

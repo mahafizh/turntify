@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Table,
   TableBody,
@@ -9,23 +8,25 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { convertToMinute } from "@/lib/convertToMinute";
+import convertToPascalCase from "@/lib/convertToPascalCase";
 import { useMusicStore } from "@/stores/useMusicStore";
 import { Clock3, Dot, Play } from "lucide-react";
 import { useEffect } from "react";
 import { useParams } from "react-router";
 
 export default function AlbumPage() {
-  const { fetchAlbumById, currentAlbum, isLoading } = useMusicStore();
+  const { fetchCollectionById, currentCollection, isLoading } = useMusicStore();
   const { albumId } = useParams();
 
   useEffect(() => {
-    if (albumId) fetchAlbumById(albumId);
-  }, [fetchAlbumById, albumId]);
+    if (albumId) fetchCollectionById(albumId);
+  }, [fetchCollectionById, albumId]);
 
   if (isLoading) return null;
+  console.log(currentCollection);
   return (
-    <div className="rounded-md">
-      <ScrollArea className="h-[calc(100vh-130px)]">
+    <div className="rounded-md min-w-0">
+      <div className="h-[calc(100vh-130px)]">
         <div
           className="absolute inset-0 bg-linear-to-b -mt-12 from-[#5038a0]/80 top-0 via-zinc-900/80 to-zinc-900 pointer-events-none h-[calc(100vh-125px)]"
           aria-hidden="true"
@@ -35,22 +36,32 @@ export default function AlbumPage() {
             <div className="flex p-4 gap-4">
               <img
                 src="https://res.cloudinary.com/dc4k7fypt/image/upload/v1770652127/image-music_okmrp5.jpg"
-                alt={currentAlbum?.title}
+                alt={currentCollection?.title}
                 className="w-50 h-50 shadow-2xl rounded-sm"
               />
-              <div className="flex flex-col justify-end gap-3">
-                <p className="text-sm font-bold">Album</p>
-                <h1 className="text-6xl h-18 font-medium truncate">
-                  {currentAlbum?.title}
+              <div className="flex flex-col justify-end min-w-0">
+                <p className="text-sm font-bold">
+                  {convertToPascalCase(currentCollection?.collection || "")}
+                </p>
+                <h1 className="text-4xl h-auto font-medium text-wrap min-w-0">
+                  {currentCollection?.title}
                 </h1>
                 <div className="flex items-center text-lg">
                   <span className="text-lg font-medium">
-                    {currentAlbum?.artist}
+                    {currentCollection?.createdBy.fullName}
                   </span>
                   <Dot size={30} />
-                  <span>{currentAlbum?.releaseYear}</span>
+                  <span>
+                    {currentCollection?.createdAt &&
+                      new Date(currentCollection.createdAt).toLocaleString(
+                        "en-US",
+                        {
+                          year: "numeric",
+                        },
+                      )}
+                  </span>
                   <Dot size={30} />
-                  <span>{currentAlbum?.songs.length} songs</span>
+                  <span>{convertToMinute(currentCollection?.duration ?? 0)}</span>
                 </div>
               </div>
             </div>
@@ -82,7 +93,7 @@ export default function AlbumPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {currentAlbum?.songs.map((song, index) => (
+                    {currentCollection?.songs.map((song, index) => (
                       <TableRow
                         key={song._id}
                         className="hover:bg-white/30 border-0 group"
@@ -109,7 +120,7 @@ export default function AlbumPage() {
                           </div>
                         </TableCell>
                         <TableCell className="hidden lg:table-cell text-white/80 font-normal">
-                          1.900.000
+                          {song.played}
                         </TableCell>
                         <TableCell className="hidden lg:table-cell text-white/80 font-normal">
                           {new Date(song.createdAt).toLocaleString("en-US", {
@@ -129,7 +140,7 @@ export default function AlbumPage() {
             </div>
           </div>
         </div>
-      </ScrollArea>
+      </div>
     </div>
   );
 }

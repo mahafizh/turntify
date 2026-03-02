@@ -1,8 +1,5 @@
 import LoginPrompt from "@/components/LoginPrompt";
-import {
-  Avatar,
-  AvatarImage,
-} from "@/components/ui/avatar";
+import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useChatStore } from "@/stores/useChatStore";
 import { useUser } from "@clerk/clerk-react";
@@ -11,13 +8,13 @@ import { useEffect } from "react";
 import { Link } from "react-router";
 
 export default function RightSidebar() {
-  const { users, fetchUser } = useChatStore();
+  const { friends, fetchFriend } = useChatStore();
 
   const { user } = useUser();
 
   useEffect(() => {
-    if (user) fetchUser();
-  }, [users, fetchUser, user]);
+    if (user) fetchFriend();
+  }, [friends, fetchFriend, user]);
 
   return (
     <div className="h-[calc(100vh-130px)] bg-zinc-900 rounded-md flex flex-col p-4 ">
@@ -33,20 +30,20 @@ export default function RightSidebar() {
           </div>
           <ScrollArea className="flex-1">
             <div className="py-4 space-y-4">
-              {users.map((user) => (
+              {friends.map((friend) => (
                 <div
-                  key={user._id}
+                  key={friend._id}
                   className="flex cursor-pointer rounded-lg pt-3 gap-3 "
                 >
                   <div className="flex group transition-colors">
                     <Avatar className="size-10 block group-hover:hidden">
-                      <AvatarImage src={user.imageUrl} alt={user.fullName} />
+                      <AvatarImage src={friend.imageUrl} alt={friend.fullName} />
                     </Avatar>
                     <Play className="items-center mt-2 mx-2 hidden group-hover:block" />
                   </div>
                   <div>
                     <h1 className="text-sm font-medium truncate leading-3">
-                      {user.fullName}
+                      {friend.fullName}
                     </h1>
                     <h2 className="flex font-extralight text-sm  items-center">
                       <Link to={"/"} className="hover:underline">

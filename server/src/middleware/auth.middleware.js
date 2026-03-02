@@ -1,6 +1,7 @@
 import { clerkClient, getAuth } from "@clerk/express";
 import { User } from "../models/user.model.js";
-import { errorResponse } from "../utils/response.js";
+import dotenv from "dotenv";
+dotenv.config();
 
 export const requireAdmin = async (req, res, next) => {
   try {
@@ -10,22 +11,21 @@ export const requireAdmin = async (req, res, next) => {
       process.env.ADMIN_EMAIL === currentUser.primaryEmailAddress?.emailAddress;
 
     if (!isAdmin) {
-      res.status(403).json({ message: "Unauthorized" });
+      return res.status(403).json({ message: "Unauthorized" });
     }
     next();
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Internal server error" });
-    throw new error
   }
 };
 
 export const authUser = async (req, res, next) => {
   try {
     const { userId: clerkId } = getAuth(req);
-    if (!clerkId) return errorResponse(res, "Unauthorized", 403);
+    if (!clerkId) return res.status(403).json({ message: "Unauthorized" });
     const user = await User.findOne({ clerkId });
-    if (!user) return errorResponse(res, "User Not Found", 404);
+    if (!user) return res.status(404).json({ message: "User not found" });
     req.user = user;
     next();
   } catch (error) {

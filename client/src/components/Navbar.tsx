@@ -20,7 +20,7 @@ export default function Navbar() {
   const { user } = useUser();
   return (
     <>
-      <div className="flex items-center justify-end p-4 sticky top-0 backdrop-blur-md z-10 rounded-md">
+      <div className="flex items-center justify-end p-4 sticky top-0 backdrop-blur-md z-20 rounded-md">
         <div className="flex gap-4 items-center">
           <SignedIn>
             <DropdownMenu>

@@ -34,7 +34,7 @@ export default function TrendingSongs({ trending }: any) {
           </span>
         </div>
       </h1>
-      <div  ref={scrollRef} className="w-full overflow-x-auto no-scrollbar">
+      <div ref={scrollRef} className="w-full overflow-x-auto no-scrollbar">
         <div className="flex gap-4">
           {trending.map((song: Song) => (
             <div
@@ -47,7 +47,7 @@ export default function TrendingSongs({ trending }: any) {
                 className="mb-2 rounded-sm"
               />
               <div className="font-medium text-lg">{song.title}</div>
-              <div className="font-light text-base wrap-break-word line-clamp-2">
+              <div className="font-normal text-zinc-400 text-base wrap-break-word line-clamp-2">
                 Artist Aggregate
               </div>
             </div>

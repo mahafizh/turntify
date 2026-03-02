@@ -1,30 +1,30 @@
-import { useEffect } from "react";
-import { useMusicStore } from "@/stores/useMusicStore";
+import convertToPascalCase from "@/lib/convertToPascalCase.js";
+import type { Collection } from "@/types";
 import { Link } from "react-router";
 
-export default function LibraryAlbum() {
-  const { albums, fetchAlbums } = useMusicStore();
+type CollectionProps = {
+  collections: Collection[];
+};
 
-  useEffect(() => {
-    fetchAlbums();
-  }, [fetchAlbums]);
-
+export default function LibraryAlbum({ collections }: CollectionProps) {
   return (
     <div>
-      {albums.map((album) => (
+      {collections.map((collection) => (
         <Link
-          to={`/albums/${album._id}`}
-          key={album._id}
-          className="flex my-2 gap-4 hover:bg-zinc-700 p-2 rounded-sm"
+          to={`/collections/${collection._id}`}
+          key={collection._id}
+          className="flex my-2 gap-4 hover:bg-zinc-700 p-2 rounded-sm items-center"
         >
           <img
             src={import.meta.env.VITE_DEFAULT_IMAGE}
-            alt={album.title}
+            alt={collection.title}
             className="size-11 rounded-md shrink-0 object-cover"
           />
           <div className="flex-1 hidden sm:block min-w-0">
-            <h1 className="font-medium truncate">{album.title}</h1>
-            <h2 className="text-sm truncate">{album.artist}</h2>
+            <h1 className="font-medium truncate">{collection.title}</h1>
+            <h2 className="text-sm truncate">
+              {convertToPascalCase(collection.type)}
+            </h2>
           </div>
         </Link>
       ))}

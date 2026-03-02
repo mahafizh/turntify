@@ -8,6 +8,7 @@ import {
   addSavedAlbum,
   getAllUser,
   getCollection,
+  getCollectionById,
   getFriend,
   getUserById,
   removeFriend,
@@ -34,9 +35,10 @@ router.patch("/playlists/:playlistId", removePlaylist);
 router.post("/songs/:songId", addLikedSong);
 router.patch("/songs/:songId", removeLikedSong);
 
-router.get("/collection", getCollection);
+router.get("/collections", getCollection);
+router.get("/collections/:id", getCollectionById);
 
-router.get("/", requireAdmin, getAllUser);
+router.get("/", getAllUser);
 router.get("/:id", getUserById);
 router.patch("/:id", updateUser);
 

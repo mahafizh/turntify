@@ -1,12 +1,19 @@
 import { Router } from "express";
 import { requireAdmin } from "../middleware/auth.middleware.js";
-import { requireAuth } from "@clerk/express";
-import { successResponse } from "../utils/response.js";
+import { clerkClient, getAuth, requireAuth } from "@clerk/express";
+import { errorResponse, successResponse } from "../utils/response.js";
+import dotenv from "dotenv";
+dotenv.config();
 
-const router = Router()
+const router = Router();
 
-router.get('/', requireAuth(), requireAdmin, (req,res)=>{
-  return successResponse(res, "Admin", 200)
-})
+router.get("/", requireAuth(), async (req, res) => {
+  const { userId } = getAuth(req);
+  const currentUser = await clerkClient.users.getUser(userId);
+  const isAdmin =
+    process.env.ADMIN_EMAIL === currentUser.primaryEmailAddress?.emailAddress;
+  if (!isAdmin) return errorResponse(res, 200);
+  if (isAdmin) return successResponse(res, 200);
+});
 
-export default router
+export default router;

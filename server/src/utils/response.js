@@ -6,10 +6,10 @@ export const successResponse = (res, status, data = null) => {
   });
 };
 
-export const errorResponse = (res, message, status, error) => {
+export const errorResponse = (res, status, error = null) => {
   return res.status(status).json({
     success: false,
-    message,
-    error
+    message: "Request failed",
+    ...(error !== null && { error }),
   });
 };
