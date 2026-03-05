@@ -15,27 +15,31 @@ export default function AudioPlayer() {
     }
   }, [isPlaying]);
 
-  useEffect(()=>{
-    const audio = audioRef.current
+  useEffect(() => {
+    const audio = audioRef.current;
 
     const handleEnded = () => {
-      playNext()
-    }
-    audio?.addEventListener("ended", handleEnded)
-    return () => audio?.removeEventListener("ended", handleEnded)
-  },[playNext])
+      playNext();
+    };
+    audio?.addEventListener("ended", handleEnded);
+    return () => audio?.removeEventListener("ended", handleEnded);
+  }, [playNext]);
 
-  useEffect(()=>{
-    if(!audioRef.current || !currentSong) return
-    const audio = audioRef.current
-    const isSongChange = prevSongRef.current !== currentSong?.audioUrl
-    if(isSongChange) {
-      audio.src = currentSong?.audioUrl
-      audio.currentTime = 0
-      prevSongRef.current = currentSong?.audioUrl
-      if(isPlaying) audio.play()
+  useEffect(() => {
+    if (!audioRef.current || !currentSong) return;
+    const audio = audioRef.current;
+    const isSongChange = prevSongRef.current !== currentSong?.audioUrl;
+    if (isSongChange) {
+      audio.src = currentSong.audioUrl;
+      audio.currentTime = 0;
+      prevSongRef.current = currentSong.audioUrl;
+      if (isPlaying) {
+        audio.oncanplay = () => {
+          audio.play().catch(() => {});
+        };
+      }
     }
-  },[currentSong, isPlaying])
+  }, [currentSong, isPlaying]);
 
   return <audio ref={audioRef} />;
 }

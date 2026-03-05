@@ -9,11 +9,9 @@ import { Link } from "react-router";
 
 export default function RightSidebar() {
   const { friends, fetchFriend } = useChatStore();
-
   const { user } = useUser();
-
   useEffect(() => {
-    if (user) fetchFriend();
+    fetchFriend();
   }, [friends, fetchFriend, user]);
 
   return (
@@ -37,7 +35,10 @@ export default function RightSidebar() {
                 >
                   <div className="flex group transition-colors">
                     <Avatar className="size-10 block group-hover:hidden">
-                      <AvatarImage src={friend.imageUrl} alt={friend.fullName} />
+                      <AvatarImage
+                        src={friend.imageUrl}
+                        alt={friend.fullName}
+                      />
                     </Avatar>
                     <Play className="items-center mt-2 mx-2 hidden group-hover:block" />
                   </div>
@@ -58,7 +59,9 @@ export default function RightSidebar() {
                       <span>
                         <Disc3 className="size-3" />
                       </span>
-                      <Link to={"/"} className="hover:underline">The Album</Link>
+                      <Link to={"/"} className="hover:underline">
+                        The Album
+                      </Link>
                     </h2>
                   </div>
                   <div className="flex-col ml-auto items-start">
