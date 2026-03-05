@@ -10,20 +10,40 @@ import {
 import { convertToMinute } from "@/lib/convertToMinute";
 import convertToPascalCase from "@/lib/convertToPascalCase";
 import { useMusicStore } from "@/stores/useMusicStore";
-import { Clock3, Dot, Play } from "lucide-react";
+import { Clock3, Dot, Music, Pause, Play } from "lucide-react";
 import { useEffect } from "react";
 import { useParams } from "react-router";
+import { usePlayerStore } from "@/stores/usePlayerStore";
 
-export default function AlbumPage() {
+export default function CollectionPage() {
   const { fetchCollectionById, currentCollection, isLoading } = useMusicStore();
   const { albumId } = useParams();
+  const { currentSong, isPlaying, playCollection, togglePlay } =
+    usePlayerStore();
 
   useEffect(() => {
     if (albumId) fetchCollectionById(albumId);
   }, [fetchCollectionById, albumId]);
 
   if (isLoading) return null;
-  console.log(currentCollection);
+
+  const handlePlayCollection = () => {
+    if (!currentCollection) return;
+    const isCurrentCollectionPlaying = currentCollection.songs.some(
+      (song) => song._id === currentSong?._id,
+    );
+    if (isCurrentCollectionPlaying) {
+      togglePlay();
+    } else {
+      playCollection(currentCollection.songs, 0);
+    }
+  };
+
+  const handlePlaySong = (index: number) => {
+    if (!currentCollection) return;
+    playCollection(currentCollection?.songs, index);
+  };
+
   return (
     <div className="rounded-md min-w-0">
       <div className="h-[calc(100vh-130px)]">
@@ -61,14 +81,26 @@ export default function AlbumPage() {
                       )}
                   </span>
                   <Dot size={30} />
-                  <span>{convertToMinute(currentCollection?.duration ?? 0)}</span>
+                  <span>
+                    {convertToMinute(currentCollection?.duration ?? 0)}
+                  </span>
                 </div>
               </div>
             </div>
 
             <div className="flex-col p-4 bg-linear-to-b from-black/20 via-black/35 to-black/60 backdrop-blur-sm h-[calc(100vh-362px)] rounded-md">
-              <Button className="rounded-full size-16 bg-green-500 hover:bg-green-400 hover:scale-110 transition-all">
-                <Play className="size-6 text-black" />
+              <Button
+                onClick={handlePlayCollection}
+                className="rounded-full size-16 bg-green-500 hover:bg-green-400 hover:scale-110 transition-all"
+              >
+                {isPlaying &&
+                currentCollection?.songs.some(
+                  (song) => song._id === currentSong?._id,
+                ) ? (
+                  <Pause className="size-6 text-black fill-black" />
+                ) : (
+                  <Play className="size-6 text-black fill-black" />
+                )}
               </Button>
 
               <div className="p-4">
@@ -93,47 +125,59 @@ export default function AlbumPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {currentCollection?.songs.map((song, index) => (
-                      <TableRow
-                        key={song._id}
-                        className="hover:bg-white/30 border-0 group"
-                      >
-                        <TableCell className="text-white/80 font-normal w-10">
-                          <span className="group-hover:hidden">
-                            {index + 1}
-                          </span>
-                          <Play className="h-4 w-4 hidden group-hover:block " />
-                        </TableCell>
-                        <TableCell className="w-60">
-                          <div className="flex gap-2">
-                            <img
-                              src="https://res.cloudinary.com/dc4k7fypt/image/upload/v1770652127/image-music_okmrp5.jpg"
-                              className="w-10 h-10"
-                              alt=""
-                            />
-                            <div className="items-center justify-center">
-                              <h1 className="text-white text-md">
-                                {song.title}
-                              </h1>
-                              <p className="text-white/80">{song.performer}</p>
+                    {currentCollection?.songs.map((song, index) => {
+                      const isCurrentSong = currentSong?._id === song._id;
+                      return (
+                        <TableRow
+                          key={song._id}
+                          onClick={() => handlePlaySong(index)}
+                          className="hover:bg-white/30 border-0 group"
+                        >
+                          <TableCell className="text-white/80 font-normal w-10">
+                            {isCurrentSong && isPlaying ? (
+                              <Music className="size-4 text-green-500" />
+                            ) : (
+                              <span className="group-hover:hidden pl-1">
+                                {index + 1}
+                              </span>
+                            )}
+                            {!isCurrentSong && (
+                              <Play className="h-4 w-4 hidden group-hover:block " />
+                            )}
+                          </TableCell>
+                          <TableCell className="w-60">
+                            <div className="flex gap-2">
+                              <img
+                                src="https://res.cloudinary.com/dc4k7fypt/image/upload/v1770652127/image-music_okmrp5.jpg"
+                                className="w-10 h-10"
+                                alt=""
+                              />
+                              <div className="items-center justify-center">
+                                <h1 className="text-white text-md">
+                                  {song.title}
+                                </h1>
+                                <p className="text-white/80">
+                                  {song.performer}
+                                </p>
+                              </div>
                             </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="hidden lg:table-cell text-white/80 font-normal">
-                          {song.played}
-                        </TableCell>
-                        <TableCell className="hidden lg:table-cell text-white/80 font-normal">
-                          {new Date(song.createdAt).toLocaleString("en-US", {
-                            day: "2-digit",
-                            month: "short",
-                            year: "numeric",
-                          })}
-                        </TableCell>
-                        <TableCell className="text-white/80 font-normal">
-                          {convertToMinute(song.duration)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                          </TableCell>
+                          <TableCell className="hidden lg:table-cell text-white/80 font-normal">
+                            {song.played}
+                          </TableCell>
+                          <TableCell className="hidden lg:table-cell text-white/80 font-normal">
+                            {new Date(song.createdAt).toLocaleString("en-US", {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                            })}
+                          </TableCell>
+                          <TableCell className="text-white/80 font-normal">
+                            {convertToMinute(song.duration)}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>

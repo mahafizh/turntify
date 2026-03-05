@@ -16,7 +16,7 @@ export default function LibraryAlbum({ collections }: CollectionProps) {
           className="flex my-2 gap-4 hover:bg-zinc-700 p-2 rounded-sm items-center"
         >
           <img
-            src={import.meta.env.VITE_DEFAULT_IMAGE}
+            src={collection.imageUrl}
             alt={collection.title}
             className="size-11 rounded-md shrink-0 object-cover"
           />

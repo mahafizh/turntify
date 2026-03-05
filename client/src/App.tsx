@@ -4,7 +4,7 @@ import HomePage from "./pages/HomePage";
 import AuthCallback from "./pages/AuthCallbackPage";
 import MainLayout from "./layout/MainLayout";
 import ChatPage from "./pages/ChatPage";
-import AlbumPage from "./pages/CollectionsPage";
+import CollectionPage from "./pages/CollectionsPage";
 
 function App() {
   return (
@@ -22,7 +22,7 @@ function App() {
         <Route path="/" element={MainLayout()}>
           <Route index element={<HomePage />} />
           <Route path="/chat" element={<ChatPage />} />
-          <Route path="/collections/:albumId" element={<AlbumPage />} />
+          <Route path="/collections/:albumId" element={<CollectionPage />} />
         </Route>
       </Routes>
     </>
