@@ -68,9 +68,7 @@ export const getFriend = async (req, res, next) => {
       "friends",
       "fullName imageUrl",
     );
-    if (!user) throw new AppError("User not found", 404);
     const friends = user.friends;
-    // if (friends.length === 0) throw new AppError("Friend is empty", 200);
     return successResponse(res, 200, friends);
   } catch (error) {
     next(error);
@@ -134,15 +132,17 @@ export const getCollectionById = async (req, res, next) => {
         path: "createdBy",
         select: "fullName",
       });
-      const songs = await Song.find({ album: id }).select(
-        "title duration performer played createdAt",
-      );
-      songs.map((song) => {
-        totalDuration += song.duration;
-      });
+      const songs = await Song.find({ album: id })
+      const normalizedSongs = songs.map((song)=>{
+        totalDuration += song.duration
+        return {
+          ...song.toObject(),
+          addedBy: null
+        }
+      })
       return successResponse(res, 200, {
         ...album.toObject(),
-        songs,
+        songs: normalizedSongs,
         collection: "album",
         duration: totalDuration,
       });
@@ -151,7 +151,6 @@ export const getCollectionById = async (req, res, next) => {
         path: "songs",
         populate: {
           path: "song",
-          select: "title duration performer played",
         },
       }).populate({path: "createdBy", select: "fullName" });
 
