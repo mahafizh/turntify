@@ -1,7 +1,7 @@
 import type { Song } from "@/types";
 import { useRef } from "react";
-import { ChevronLeft, ChevronRight, Play } from "lucide-react";
-import { Button } from "./ui/button";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import PlayButton from "./PlayButton";
 
 export default function MadeForYouSongs({ madeForYou }: any) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -44,14 +44,23 @@ export default function MadeForYouSongs({ madeForYou }: any) {
               className="shrink-0 min-w-0 rounded-sm bg-zinc-900/50 hover:bg-zinc-800/70 w-46 p-4 group"
             >
               <div className="relative w-fit">
-                <img
-                  src={import.meta.env.VITE_DEFAULT_IMAGE}
-                  alt={song.title}
-                  className="mb-2 rounded-sm"
-                />
-                <Button className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 rounded-full size-12 bg-green-500 transition-all duration-200">
-                  <Play className="size-6 text-black" />
-                </Button>
+                {song.album?.imageUrl ? (
+                  <img
+                    src={song.album?.imageUrl}
+                    alt={song.title}
+                    className="mb-2 rounded-sm"
+                  />
+                ) : (
+                  <img
+                    src={import.meta.env.VITE_DEFAULT_IMAGE}
+                    alt={song.title}
+                    className="mb-2 rounded-sm"
+                  />
+                )}
+
+                <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 hover:scale-110 hover:bg-green-500 rounded-full size-10  bg-green-500 transition-all duration-200">
+                  <PlayButton song={song} />
+                </div>
               </div>
               <div className="font-medium text-lg">{song.title}</div>
               <div className="font-normal text-zinc-400 text-base wrap-break-word line-clamp-2">

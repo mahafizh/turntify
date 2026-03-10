@@ -24,9 +24,7 @@ export const getAllSong = async (req, res, next) => {
 export const getSongById = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const song = await Song.findById(id)
-      .populate("genre", "title")
-      .populate("album", "title");
+    const song = await Song.findById(id).populate("genre").populate("album");
     if (!song) throw new AppError("Song not found", 404);
     return successResponse(res, 200, song);
   } catch (error) {
@@ -38,17 +36,29 @@ export const getFeaturedSongs = async (req, res, next) => {
   try {
     const songs = await Song.aggregate([
       {
-        $sample: { size: 6 },
+        $sample: { size: 6 }
       },
       {
-        $project: {
-          _id: 1,
-          title: 1,
-          performer: 1,
-          audioUrl: 1,
-        },
+        $lookup: {
+          from: "albums",
+          localField: "album",
+          foreignField: "_id",
+          as: "album"
+        }
       },
+      {
+        $unwind: {
+          path: "$album",
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $addFields: {
+          album: { $ifNull: ["$album", null] }
+        }
+      }
     ]);
+
     return successResponse(res, 200, songs);
   } catch (error) {
     next(error);
@@ -59,17 +69,29 @@ export const getTrendingSongs = async (req, res, next) => {
   try {
     const songs = await Song.aggregate([
       {
-        $sample: { size: 6 },
+        $sample: { size: 6 }
       },
       {
-        $project: {
-          _id: 1,
-          title: 1,
-          performer: 1,
-          audioUrl: 1,
-        },
+        $lookup: {
+          from: "albums",
+          localField: "album",
+          foreignField: "_id",
+          as: "album"
+        }
       },
+      {
+        $unwind: {
+          path: "$album",
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $addFields: {
+          album: { $ifNull: ["$album", null] }
+        }
+      }
     ]);
+
     return successResponse(res, 200, songs);
   } catch (error) {
     next(error);
@@ -80,17 +102,29 @@ export const getMadeForYouSongs = async (req, res, next) => {
   try {
     const songs = await Song.aggregate([
       {
-        $sample: { size: 6 },
+        $sample: { size: 6 }
       },
       {
-        $project: {
-          _id: 1,
-          title: 1,
-          performer: 1,
-          audioUrl: 1,
-        },
+        $lookup: {
+          from: "albums",
+          localField: "album",
+          foreignField: "_id",
+          as: "album"
+        }
       },
+      {
+        $unwind: {
+          path: "$album",
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $addFields: {
+          album: { $ifNull: ["$album", null] }
+        }
+      }
     ]);
+
     return successResponse(res, 200, songs);
   } catch (error) {
     next(error);

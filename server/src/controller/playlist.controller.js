@@ -12,14 +12,7 @@ export const getPlaylist = async (req, res, next) => {
   try {
     const playlist = await Playlist.find({
       $or: [{ createdBy: userId }, { collaborators: userId }],
-    }).populate({
-      path: "songs",
-      populate: {
-        path: "song",
-        select: "title duration performer",
-      },
-    });
-    // if (playlist.length === 0) throw new AppError("Playlist is empty", 200);
+    })
     return successResponse(res, 200, playlist);
   } catch (error) {
     next(error);
@@ -56,20 +49,15 @@ export const createPlaylist = async (req, res, next) => {
   session.startTransaction();
 
   const userId = req.user._id;
-  const { title, description } = req.body || {};
-  let imageUrl = process.env.DEFAULT_IMAGE;
+  const imageUrl = process.env.DEFAULT_IMAGE;
 
   try {
-    if (!req.body) throw new AppError("You're not input anything", 400);
-    if (req.files?.imageFile)
-      imageUrl = await uploadToCloudinary(req.files.imageFile);
-
+    const totalPlaylist = await Playlist.countDocuments({ createdBy: userId });
     const playlist = new Playlist({
-      title,
+      title: `My Playlist ${totalPlaylist + 1}`,
       imageUrl,
       createdBy: userId,
     });
-    if (description !== undefined) playlist.description = description;
 
     const createdPlaylist = await playlist.save({ session });
 
@@ -85,6 +73,7 @@ export const createPlaylist = async (req, res, next) => {
     return successResponse(res, 201, createdPlaylist);
   } catch (error) {
     await session.abortTransaction();
+    session.endSession();
     if (imageUrl && imageUrl !== process.env.DEFAULT_IMAGE)
       await deleteFromCloudinary(imageUrl);
     next(error);
@@ -100,7 +89,6 @@ export const updatePlaylist = async (req, res, next) => {
 
   try {
     const playlist = await Playlist.findOne({ _id: id, createdBy: userId });
-    // if (!playlist) throw new AppError("Playlist not found", 404);
 
     if (title !== undefined) playlist.title = title;
     if (visibility !== undefined) playlist.visibility = visibility;

@@ -3,6 +3,35 @@ export interface Genre {
   title: string;
 }
 
+export interface Album {
+  _id: string;
+  title: string;
+  visibility: "private" | "public";
+  type: "ep" | "single" | "album";
+  createdBy: string;
+  imageUrl: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Playlist {
+  _id: string;
+  title: string;
+  visibility: "private" | "public";
+  createdBy: string;
+  collaborators: string;
+  imageUrl: string;
+  songs: {
+    _id: string;
+    song: Song[] | string;
+    addedBy: string;
+    addedAt: Date;
+  };
+  description: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface Song {
   _id: string;
   title: string;
@@ -14,23 +43,12 @@ export interface Song {
   duration: number;
   releaseYear: number;
   createdBy: string;
-  album: string | null;
+  album: Album | null;
   played: number;
   createdAt: Date;
   updatedAt: Date;
+  imageUrl: string | null;
   addedBy: string | null;
-}
-
-export type SongPreview = Pick<
-  Song,
-  "_id" | "title" | "performer" | "duration"
->;
-
-export interface PlaylistSong {
-  _id: string;
-  addedBy: string;
-  addedAt: Date;
-  song: SongPreview;
 }
 
 export interface Collection {
@@ -54,7 +72,7 @@ export interface CurrentCollection {
   collection: "album" | "playlist";
   createdBy: CollectionUser;
   createdAt: string;
-  collaborators?: string;
+  collaborators?: CollectionUser;
   description?: string;
   duration: number;
   imageUrl: string;

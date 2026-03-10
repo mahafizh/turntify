@@ -15,7 +15,7 @@ export default function RightSidebar() {
   }, [friends, fetchFriend, user]);
 
   return (
-    <div className="h-[calc(100vh-130px)] bg-zinc-900 rounded-md flex flex-col p-4 ">
+    <div className="h-[calc(100vh-120px)] bg-zinc-900 rounded-md flex flex-col p-4 ">
       {user ? (
         <div>
           <div className="flex flex-col justify-between border-zinc-800 border-b">

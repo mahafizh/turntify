@@ -10,18 +10,31 @@ import {
 import { convertToMinute } from "@/lib/convertToMinute";
 import convertToPascalCase from "@/lib/convertToPascalCase";
 import { useMusicStore } from "@/stores/useMusicStore";
-import { Clock3, Dot, Music, Pause, Play } from "lucide-react";
+import { Clock3, Dot, Ellipsis, Music, Pause, Play } from "lucide-react";
 import { useEffect } from "react";
 import { useParams } from "react-router";
 import { usePlayerStore } from "@/stores/usePlayerStore";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuPortal,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { usePlaylistStore } from "@/stores/usePlaylistStore";
 
 export default function CollectionPage() {
   const { fetchCollectionById, currentCollection, isLoading } = useMusicStore();
   const { albumId } = useParams();
   const { currentSong, isPlaying, playCollection, togglePlay } =
     usePlayerStore();
-
+  const { playlists, fetchPlaylist } = usePlaylistStore();
   useEffect(() => {
+    fetchPlaylist();
     if (albumId) fetchCollectionById(albumId);
   }, [fetchCollectionById, albumId]);
 
@@ -55,7 +68,7 @@ export default function CollectionPage() {
           <div className="relative z-10 ">
             <div className="flex p-4 gap-4">
               <img
-                src="https://res.cloudinary.com/dc4k7fypt/image/upload/v1770652127/image-music_okmrp5.jpg"
+                src={currentCollection?.imageUrl}
                 alt={currentCollection?.title}
                 className="w-50 h-50 shadow-2xl rounded-sm"
               />
@@ -130,10 +143,12 @@ export default function CollectionPage() {
                       return (
                         <TableRow
                           key={song._id}
-                          onClick={() => handlePlaySong(index)}
                           className="hover:bg-white/30 border-0 group"
                         >
-                          <TableCell className="text-white/80 font-normal w-10">
+                          <TableCell
+                            onClick={() => handlePlaySong(index)}
+                            className="text-white/80 font-normal w-10"
+                          >
                             {isCurrentSong && isPlaying ? (
                               <Music className="size-4 text-green-500" />
                             ) : (
@@ -142,16 +157,24 @@ export default function CollectionPage() {
                               </span>
                             )}
                             {!isCurrentSong && (
-                              <Play className="h-4 w-4 hidden group-hover:block " />
+                              <Play className="fill-white h-4 w-4 hidden group-hover:block " />
                             )}
                           </TableCell>
                           <TableCell className="w-60">
                             <div className="flex gap-2">
-                              <img
-                                src="https://res.cloudinary.com/dc4k7fypt/image/upload/v1770652127/image-music_okmrp5.jpg"
-                                className="w-10 h-10"
-                                alt=""
-                              />
+                              {song.imageUrl ? (
+                                <img
+                                  src={song.imageUrl}
+                                  className="w-10 h-10"
+                                  alt=""
+                                />
+                              ) : (
+                                <img
+                                  src="https://res.cloudinary.com/dc4k7fypt/image/upload/v1770652127/image-music_okmrp5.jpg"
+                                  className="w-10 h-10"
+                                  alt=""
+                                />
+                              )}
                               <div className="items-center justify-center">
                                 <h1 className="text-white text-md">
                                   {song.title}
@@ -174,6 +197,40 @@ export default function CollectionPage() {
                           </TableCell>
                           <TableCell className="text-white/80 font-normal">
                             {convertToMinute(song.duration)}
+                          </TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  className="hover:bg-black/0"
+                                  variant="ghost"
+                                  size="icon"
+                                >
+                                  <Ellipsis className="size-5 text-zinc-200 hidden group-hover:block" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent>
+                                <DropdownMenuGroup>
+                                  <DropdownMenuItem>
+                                    Save to your liked songs
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSub>
+                                    <DropdownMenuSubTrigger>
+                                      Add to playlist
+                                    </DropdownMenuSubTrigger>
+                                    <DropdownMenuPortal>
+                                      <DropdownMenuSubContent>
+                                        {playlists.map((playlist) => (
+                                          <DropdownMenuItem key={playlist._id}>
+                                            {playlist.title}
+                                          </DropdownMenuItem>
+                                        ))}
+                                      </DropdownMenuSubContent>
+                                    </DropdownMenuPortal>
+                                  </DropdownMenuSub>
+                                </DropdownMenuGroup>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </TableCell>
                         </TableRow>
                       );

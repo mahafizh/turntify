@@ -4,13 +4,14 @@ import LeftSidebar from "@/layout/components/LeftSidebar";
 import RightSidebar from "@/layout/components/RightSidebar";
 import { Group, Panel, Separator } from "react-resizable-panels";
 import Navbar from "@/components/Navbar";
-import AudioPlayer from "./components/AudioPlayer"
+import AudioPlayer from "./components/AudioPlayer";
+import SongControl from "./components/SongControl";
 
 export default function MainLayout() {
   return (
     <div className="h-screen bg-black text-white flex flex-col">
       <Group orientation="horizontal" className="flex-1 flex h-full p-2">
-        <AudioPlayer/>
+        <AudioPlayer />
         {/* LEFT */}
         <Panel defaultSize="20%" maxSize="40%" minSize="10%">
           <LeftSidebar />
@@ -40,7 +41,9 @@ export default function MainLayout() {
           </div>
         </Panel>
       </Group>
-      <div className="bg-zinc-900 rounded-sm mx-3 mt-1.5 h-26"></div>
+      <div className="bg-black mx-3 mt-1.5 h-24">
+        <SongControl />
+      </div>
     </div>
   );
 }

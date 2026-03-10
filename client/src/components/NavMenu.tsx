@@ -1,10 +1,11 @@
 import { cn } from "@/lib/utils";
 import { HomeIcon, MessageSquare } from "lucide-react";
-import { Link } from "react-router";
+import { Link, useLocation } from "react-router";
 import { buttonVariants } from "./ui/button";
 import { SignedIn } from "@clerk/clerk-react";
 
 export default function NavMenu() {
+  const location = useLocation();
   return (
     <div className="rounded-sm bg-zinc-900 py-4 px-2">
       <div className="flex-col justify-between">
@@ -18,8 +19,12 @@ export default function NavMenu() {
             }),
           )}
         >
-          <HomeIcon className="size-6"/>
-          <h1 className="hidden md:inline">Home</h1>
+          <HomeIcon
+            className={
+              location.pathname === "/" ? "size-6 fill-white" : "size-6"
+            }
+          />
+          <h1>Home</h1>
         </Link>
         <SignedIn>
           <Link
@@ -32,8 +37,12 @@ export default function NavMenu() {
               }),
             )}
           >
-            <MessageSquare className="size-6"/>
-            <h1 className="hidden md:inline">Messages</h1>
+            <MessageSquare
+              className={
+                location.pathname === "/chat" ? "size-6 fill-white" : "size-6"
+              }
+            />
+            <h1>Messages</h1>
           </Link>
         </SignedIn>
       </div>

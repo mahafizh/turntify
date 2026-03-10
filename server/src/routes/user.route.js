@@ -6,6 +6,7 @@ import {
   addLikedSong,
   addPlaylist,
   addSavedAlbum,
+  checkLikedSong,
   getAllUser,
   getCollection,
   getCollectionById,
@@ -32,6 +33,7 @@ router.patch("/albums/:albumId", removeSavedAlbum);
 router.post("/playlists/:playlistId", addPlaylist);
 router.patch("/playlists/:playlistId", removePlaylist);
 
+router.get("/songs/:songId", checkLikedSong);
 router.post("/songs/:songId", addLikedSong);
 router.patch("/songs/:songId", removeLikedSong);
 

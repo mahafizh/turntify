@@ -12,16 +12,26 @@ export default function FeaturedSong({ featured }: any) {
             key={song._id}
             className="group flex items-center h-16 bg-zinc-900/50 hover:bg-zinc-800/70 rounded-sm"
           >
-            <img
-              src={import.meta.env.VITE_DEFAULT_IMAGE}
-              alt={song.title}
-              className="h-16 w-16 bg-zinc-700 shrink-0 rounded-sm"
-            />
-            <div className="text-white text-sm text-wrap leading-5 truncate flex-1 p-4 min-w-0">
-              {song.title}
+            {song.album?.imageUrl ? (
+              <img
+                src={song.album?.imageUrl}
+                alt={song.title}
+                className="h-16 w-16 bg-zinc-700 shrink-0 rounded-sm"
+              />
+            ) : (
+              <img
+                src={import.meta.env.VITE_DEFAULT_IMAGE}
+                alt={song.title}
+                className="h-16 w-16 bg-zinc-700 shrink-0 rounded-sm"
+              />
+            )}
+            <div className="flex flex-col flex-1 min-w-0 p-4">
+              <div className="text-white text-sm leading-5 line-clamp-2">
+                {song.title}
+              </div>
             </div>
-            <div className="group-hover:block">
-              <PlayButton song={song}/>
+            <div className="mr-2 group-hover:block">
+              <PlayButton song={song} />
             </div>
           </div>
         ))}

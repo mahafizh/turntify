@@ -1,10 +1,5 @@
 import { axiosInstance } from "@/lib/axios";
-import type {
-  Genre,
-  Song,
-  Collection,
-  CurrentCollection,
-} from "@/types";
+import type { Genre, Song, Collection, CurrentCollection } from "@/types";
 import { create } from "zustand";
 
 interface MusicStore {
@@ -17,6 +12,7 @@ interface MusicStore {
   trending: Song[];
   collections: Collection[];
   currentCollection: CurrentCollection | null;
+  isLikedSong: boolean;
 
   fetchCollections: (type?: "album" | "playlist") => Promise<void>;
   fetchTrending: () => Promise<void>;
@@ -24,6 +20,7 @@ interface MusicStore {
   fetchMadeForYou: () => Promise<void>;
   fetchCollectionById: (id: string) => Promise<void>;
   fetchGenres: () => Promise<void>;
+  fetchCheckLikedSong: (id: string) => Promise<void>;
 }
 
 export const useMusicStore = create<MusicStore>((set) => ({
@@ -37,6 +34,7 @@ export const useMusicStore = create<MusicStore>((set) => ({
   trending: [],
   madeForYou: [],
   currentCollection: null,
+  isLikedSong: false,
 
   fetchGenres: async () => {
     set({ isLoading: true, error: null });
@@ -110,6 +108,18 @@ export const useMusicStore = create<MusicStore>((set) => ({
       set({ error: error.response.data.message });
     } finally {
       set({ isLoading: false });
+    }
+  },
+
+  fetchCheckLikedSong: async (id) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await axiosInstance(`users/songs/${id}`)
+      set({isLikedSong: response.data.data.exists})
+    } catch (error: any) {
+      set({error: error.response.data.message})
+    } finally {
+      set({isLoading: false})
     }
   },
 }));

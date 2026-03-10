@@ -6,7 +6,7 @@ export default function AudioPlayer() {
   const prevSongRef = useRef<string | null>(null);
 
   const { currentSong, isPlaying, playNext } = usePlayerStore();
-
+  
   useEffect(() => {
     if (isPlaying) {
       audioRef.current?.play();

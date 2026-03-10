@@ -20,12 +20,12 @@ export default function PlayButton({ song }: { song: Song }) {
     <div>
       <Button
         onClick={handlePlay}
-        className={`mr-2 rounded-full size-10 bg-green-500 hover:bg-green-400 hover:scale-105 transition-all opacity-0 ${isCurrentSong ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+        className={`rounded-full size-10 bg-green-500 hover:bg-green-500 hover:scale-110 transition-all opacity-0 ${isCurrentSong ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
       >
         {isCurrentSong && isPlaying ? (
-          <Pause className="size-4 text-black fill-black" />
+          <Pause className="size-5 text-black fill-black" />
         ) : (
-          <Play className="size-4 text-black fill-black" />
+          <Play className="size-5 text-black fill-black" />
         )}
       </Button>
     </div>

@@ -124,6 +124,7 @@ export const getCollection = async (req, res, next) => {
 export const getCollectionById = async (req, res, next) => {
   const { id } = req.params;
   let totalDuration = 0;
+  let imageUrl = null;
   try {
     const albumExist = await Album.exists({ _id: id });
     const playlistExist = await Playlist.exists({ _id: id });
@@ -132,14 +133,15 @@ export const getCollectionById = async (req, res, next) => {
         path: "createdBy",
         select: "fullName",
       });
-      const songs = await Song.find({ album: id })
-      const normalizedSongs = songs.map((song)=>{
-        totalDuration += song.duration
+      const songs = await Song.find({ album: id }).populate("album");
+      const normalizedSongs = songs.map((song) => {
+        totalDuration += song.duration;
         return {
           ...song.toObject(),
-          addedBy: null
-        }
-      })
+          imageUrl: album.imageUrl,
+          addedBy: null,
+        };
+      });
       return successResponse(res, 200, {
         ...album.toObject(),
         songs: normalizedSongs,
@@ -147,17 +149,23 @@ export const getCollectionById = async (req, res, next) => {
         duration: totalDuration,
       });
     } else if (playlistExist) {
-      const playlist = await Playlist.findById(id).populate({
-        path: "songs",
-        populate: {
-          path: "song",
-        },
-      }).populate({path: "createdBy", select: "fullName" });
-
-      const normalizedSongs = playlist.songs.map((song) => ({
-        ...song.song.toObject(),
-        addedBy: song.addedBy,
-        createdAt: song.addedAt,
+      const playlist = await Playlist.findById(id)
+        .populate({
+          path: "songs",
+          populate: {
+            path: "song",
+            populate: {
+              path: "album",
+            },
+          },
+        })
+        .populate({ path: "createdBy", select: "fullName" })
+        .populate({ path: "collaborators", select: "fullName" });
+      const normalizedSongs = playlist.songs.map((s) => ({
+        ...s.song.toObject(),
+        imageUrl: s.song.album?.imageUrl || null,
+        addedBy: s.addedBy,
+        createdAt: s.addedAt,
       }));
 
       normalizedSongs.forEach((song) => {
@@ -171,6 +179,17 @@ export const getCollectionById = async (req, res, next) => {
         duration: totalDuration,
       });
     }
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const checkLikedSong = async (req, res, next) => {
+  const userId = req.user._id;
+  const { songId } = req.params;
+  try {
+    const songExists = await User.exists({ _id: userId, likedSongs: songId });
+    return successResponse(res, 200, { exists: !!songExists });
   } catch (error) {
     next(error);
   }
