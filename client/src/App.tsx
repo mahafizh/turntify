@@ -22,7 +22,7 @@ function App() {
         <Route path="/" element={MainLayout()}>
           <Route index element={<HomePage />} />
           <Route path="/chat" element={<ChatPage />} />
-          <Route path="/collections/:albumId" element={<CollectionPage />} />
+          <Route path="/collections/:collectionId" element={<CollectionPage />} />
         </Route>
       </Routes>
     </>

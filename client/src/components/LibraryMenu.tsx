@@ -13,7 +13,7 @@ import { usePlaylistStore } from "@/stores/usePlaylistStore";
 
 export default function LibraryMenu() {
   const { collections, fetchCollections } = useMusicStore();
-  const { fetchCreatePlaylist } = usePlaylistStore();
+  const { CreatePlaylist } = usePlaylistStore();
   const [active, setActive] = useState<"album" | "playlist" | null>(null);
 
   useEffect(() => {
@@ -31,7 +31,7 @@ export default function LibraryMenu() {
   };
 
   const handleCreatePlaylist = async () => {
-    fetchCreatePlaylist();
+    CreatePlaylist();
     fetchCollections();
   };
 

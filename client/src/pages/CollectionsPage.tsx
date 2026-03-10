@@ -29,14 +29,20 @@ import { usePlaylistStore } from "@/stores/usePlaylistStore";
 
 export default function CollectionPage() {
   const { fetchCollectionById, currentCollection, isLoading } = useMusicStore();
-  const { albumId } = useParams();
+  const { collectionId } = useParams();
   const { currentSong, isPlaying, playCollection, togglePlay } =
     usePlayerStore();
-  const { playlists, fetchPlaylist } = usePlaylistStore();
+  const {
+    playlists,
+    fetchPlaylist,
+    AddSongToPlaylist,
+    RemoveSongFromPlaylist,
+  } = usePlaylistStore();
+
   useEffect(() => {
     fetchPlaylist();
-    if (albumId) fetchCollectionById(albumId);
-  }, [fetchCollectionById, albumId]);
+    if (collectionId) fetchCollectionById(collectionId);
+  }, [fetchCollectionById, collectionId]);
 
   if (isLoading) return null;
 
@@ -55,6 +61,18 @@ export default function CollectionPage() {
   const handlePlaySong = (index: number) => {
     if (!currentCollection) return;
     playCollection(currentCollection?.songs, index);
+  };
+
+  const songIncluded = (songId: string) => {
+    if (!currentCollection) return;
+    if (currentCollection.collection === "playlist") {
+      return currentCollection.songs.some((song) => song._id === songId);
+    }
+  };
+
+  const handleRemoveSongFromPlaylist = (songId: string, playlistId: string) => {
+    RemoveSongFromPlaylist(songId, playlistId);
+    if (collectionId) fetchCollectionById(collectionId);
   };
 
   return (
@@ -214,20 +232,41 @@ export default function CollectionPage() {
                                   <DropdownMenuItem>
                                     Save to your liked songs
                                   </DropdownMenuItem>
-                                  <DropdownMenuSub>
-                                    <DropdownMenuSubTrigger>
-                                      Add to playlist
-                                    </DropdownMenuSubTrigger>
-                                    <DropdownMenuPortal>
-                                      <DropdownMenuSubContent>
-                                        {playlists.map((playlist) => (
-                                          <DropdownMenuItem key={playlist._id}>
-                                            {playlist.title}
-                                          </DropdownMenuItem>
-                                        ))}
-                                      </DropdownMenuSubContent>
-                                    </DropdownMenuPortal>
-                                  </DropdownMenuSub>
+                                  {!songIncluded(song._id) ? (
+                                    <DropdownMenuSub>
+                                      <DropdownMenuSubTrigger>
+                                        Add to playlist
+                                      </DropdownMenuSubTrigger>
+                                      <DropdownMenuPortal>
+                                        <DropdownMenuSubContent>
+                                          {playlists.map((playlist) => (
+                                            <DropdownMenuItem
+                                              key={playlist._id}
+                                              onClick={() =>
+                                                AddSongToPlaylist(
+                                                  song._id,
+                                                  playlist._id,
+                                                )
+                                              }
+                                            >
+                                              {playlist.title}
+                                            </DropdownMenuItem>
+                                          ))}
+                                        </DropdownMenuSubContent>
+                                      </DropdownMenuPortal>
+                                    </DropdownMenuSub>
+                                  ) : (
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        handleRemoveSongFromPlaylist(
+                                          song._id,
+                                          currentCollection._id,
+                                        )
+                                      }
+                                    >
+                                      Remove from playlist
+                                    </DropdownMenuItem>
+                                  )}
                                 </DropdownMenuGroup>
                               </DropdownMenuContent>
                             </DropdownMenu>

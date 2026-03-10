@@ -5,10 +5,12 @@ import { create } from "zustand";
 interface PlaylistStore {
   isLoading: boolean;
   error: string | null;
-  playlists: Playlist[]
+  playlists: Playlist[];
 
-  fetchCreatePlaylist: () => Promise<void>;
-  fetchPlaylist: () => Promise<void>
+  CreatePlaylist: () => Promise<void>;
+  fetchPlaylist: () => Promise<void>;
+  AddSongToPlaylist: (songId: string, playlistId: string) => Promise<void>;
+  RemoveSongFromPlaylist: (songId: string, playlistId: string) => Promise<void>;
 }
 
 export const usePlaylistStore = create<PlaylistStore>((set) => ({
@@ -16,22 +18,44 @@ export const usePlaylistStore = create<PlaylistStore>((set) => ({
   error: null,
   playlists: [],
 
-  fetchPlaylist: async() => {
-    set({isLoading: true, error: null})
+  fetchPlaylist: async () => {
+    set({ isLoading: true, error: null });
     try {
-      const response = await axiosInstance.get("/playlists")
-      set({playlists: response.data.data})
-    } catch (error:any) {
-      set({error: error.response.data.message})
+      const response = await axiosInstance.get("/playlists");
+      set({ playlists: response.data.data });
+    } catch (error: any) {
+      set({ error: error.response.data.message });
     } finally {
-      set({isLoading: false})
+      set({ isLoading: false });
     }
   },
 
-  fetchCreatePlaylist: async () => {
+  CreatePlaylist: async () => {
     set({ isLoading: true, error: null });
     try {
       await axiosInstance.post("/playlists");
+    } catch (error: any) {
+      set({ error: error.response.data.message });
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  AddSongToPlaylist: async (songId, playlistId) => {
+    set({ isLoading: true, error: null });
+    try {
+      await axiosInstance.post(`songs/${songId}/playlists/${playlistId}`)
+    } catch (error: any) {
+      set({ error: error.response.data.message });
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  RemoveSongFromPlaylist: async (songId, playlistId) => {
+    set({ isLoading: true, error: null });
+    try {
+      await axiosInstance.delete(`songs/${songId}/playlists/${playlistId}`)
     } catch (error: any) {
       set({ error: error.response.data.message });
     } finally {
