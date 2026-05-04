@@ -9,11 +9,30 @@ import { Playlist } from "../models/playlist.model.js";
 import { AppError } from "../utils/ErrorHandler.js";
 import mongoose from "mongoose";
 import { User } from "../models/user.model.js";
+import { genreChecking } from "../helper/genreChecking.js";
 dotenv.config();
 
 export const getAllSong = async (req, res, next) => {
+  const { userId } = req.query;
+  let songs;
   try {
-    const songs = await Song.find().sort({ createdAt: -1 });
+    if (userId) {
+      songs = await Song.find({ createdBy: userId })
+        .populate({
+          path: "album",
+          select: "title",
+        })
+        .sort({
+          createdAt: -1,
+        });
+    } else {
+      songs = await Song.find()
+        .populate({
+          path: "album",
+          select: "title",
+        })
+        .sort({ createdAt: -1 });
+    }
     if (songs.length === 0) throw new AppError("Songs is empty", 200);
     return successResponse(res, 200, songs);
   } catch (error) {
@@ -36,27 +55,27 @@ export const getFeaturedSongs = async (req, res, next) => {
   try {
     const songs = await Song.aggregate([
       {
-        $sample: { size: 6 }
+        $sample: { size: 6 },
       },
       {
         $lookup: {
           from: "albums",
           localField: "album",
           foreignField: "_id",
-          as: "album"
-        }
+          as: "album",
+        },
       },
       {
         $unwind: {
           path: "$album",
-          preserveNullAndEmptyArrays: true
-        }
+          preserveNullAndEmptyArrays: true,
+        },
       },
       {
         $addFields: {
-          album: { $ifNull: ["$album", null] }
-        }
-      }
+          album: { $ifNull: ["$album", null] },
+        },
+      },
     ]);
 
     return successResponse(res, 200, songs);
@@ -69,27 +88,27 @@ export const getTrendingSongs = async (req, res, next) => {
   try {
     const songs = await Song.aggregate([
       {
-        $sample: { size: 6 }
+        $sample: { size: 6 },
       },
       {
         $lookup: {
           from: "albums",
           localField: "album",
           foreignField: "_id",
-          as: "album"
-        }
+          as: "album",
+        },
       },
       {
         $unwind: {
           path: "$album",
-          preserveNullAndEmptyArrays: true
-        }
+          preserveNullAndEmptyArrays: true,
+        },
       },
       {
         $addFields: {
-          album: { $ifNull: ["$album", null] }
-        }
-      }
+          album: { $ifNull: ["$album", null] },
+        },
+      },
     ]);
 
     return successResponse(res, 200, songs);
@@ -102,27 +121,27 @@ export const getMadeForYouSongs = async (req, res, next) => {
   try {
     const songs = await Song.aggregate([
       {
-        $sample: { size: 6 }
+        $sample: { size: 6 },
       },
       {
         $lookup: {
           from: "albums",
           localField: "album",
           foreignField: "_id",
-          as: "album"
-        }
+          as: "album",
+        },
       },
       {
         $unwind: {
           path: "$album",
-          preserveNullAndEmptyArrays: true
-        }
+          preserveNullAndEmptyArrays: true,
+        },
       },
       {
         $addFields: {
-          album: { $ifNull: ["$album", null] }
-        }
-      }
+          album: { $ifNull: ["$album", null] },
+        },
+      },
     ]);
 
     return successResponse(res, 200, songs);
@@ -136,22 +155,12 @@ export const createSong = async (req, res, next) => {
   if (!req.files.audioFile) {
     throw new AppError("Please upload audio file", 400);
   }
-  const { title, performer, writer, publisher, duration, releaseYear } =
+  const { title, performer, writer, publisher, duration, releaseYear, genres } =
     req.body;
-  let { genre } = req.body;
   let audioUrl;
   try {
-    if (!Array.isArray(genre)) {
-      genre = [genre];
-    }
-    if (genre.length === 0) throw new AppError("Genre can't be empty", 400);
-
-    const existingGenre = await Genre.find({
-      _id: { $in: genre },
-    });
-    if (existingGenre.length !== genre.length) {
-      throw new AppError("Genre not valid", 400);
-    }
+    const validatedGenres = await genreChecking(Genre, genres);
+    if (!validatedGenres) throw new AppError("Genre is required", 400);
 
     audioUrl = await uploadToCloudinary(req.files.audioFile);
 
@@ -161,7 +170,7 @@ export const createSong = async (req, res, next) => {
       writer,
       publisher,
       audioUrl,
-      genre,
+      genre: validatedGenres,
       duration,
       releaseYear,
       createdBy: userId,
@@ -180,7 +189,7 @@ export const updateSong = async (req, res, next) => {
   const { id } = req.params;
   let newAudioUrl;
   let oldAudioUrl;
-  const { title, performer, writer, publisher, duration, releaseYear, genre } =
+  const { title, performer, writer, publisher, duration, releaseYear, genres } =
     req.body || {};
   try {
     if (!req.body) throw new AppError("You are not changing anything", 200);
@@ -193,7 +202,10 @@ export const updateSong = async (req, res, next) => {
     if (publisher !== undefined) song.publisher = publisher;
     if (duration !== undefined) song.duration = duration;
     if (releaseYear !== undefined) song.releaseYear = releaseYear;
-    if (genre !== undefined) song.genre = genre;
+    const validatedGenres = await genreChecking(Genre, genres);
+    if (validatedGenres !== undefined) {
+      song.genre = validatedGenres;
+    }
 
     if (req.files?.audioFile) {
       oldAudioUrl = song.audioUrl;
@@ -202,7 +214,7 @@ export const updateSong = async (req, res, next) => {
     }
 
     const updatedSong = await song.save();
-    await deleteFromCloudinary(oldAudioUrl);
+    if (oldAudioUrl) await deleteFromCloudinary(oldAudioUrl);
     return successResponse(res, 200, updatedSong);
   } catch (error) {
     await deleteFromCloudinary(newAudioUrl);
@@ -349,6 +361,20 @@ export const removeSongFromPlaylist = async (req, res, next) => {
     });
     if (!playlist) throw new AppError("Song already removed from playlist");
     return successResponse(res, 200, playlist);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const addSongPlayed = async (req, res, next) => {
+  const { songId } = req.params;
+  try {
+    const song = await Song.findByIdAndUpdate(
+      songId,
+      { $inc: { played: 1 } },
+      { new: true },
+    );
+    return successResponse(res, 200, song);
   } catch (error) {
     next(error);
   }

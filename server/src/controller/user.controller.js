@@ -7,6 +7,7 @@ import { Playlist } from "../models/playlist.model.js";
 import { AppError } from "../utils/ErrorHandler.js";
 import { uploadToCloudinary } from "../utils/UploadToCloudinary.js";
 import { deleteFromCloudinary } from "../utils/DeleteFromCloudinary.js";
+import { use } from "react";
 
 export const getAllUser = async (req, res, next) => {
   try {
@@ -77,13 +78,13 @@ export const getFriend = async (req, res, next) => {
 
 export const getCollection = async (req, res, next) => {
   const userId = req.user._id;
-  const { type } = req.query;
+  const { type, visibility } = req.query;
   try {
     const user = await User.findById(userId)
       .select("savedAlbums")
       .populate({
         path: "savedAlbums",
-        select: "title imageUrl createdBy",
+        select: "title imageUrl visibility createdBy",
         populate: {
           path: "createdBy",
           select: "fullName",
@@ -92,15 +93,16 @@ export const getCollection = async (req, res, next) => {
     const playlists = await Playlist.find({
       $or: [{ createdBy: userId }, { collaborators: userId }],
     })
-      .select("title imageUrl createdBy")
+      .select("title imageUrl visibility createdBy")
       .populate("createdBy", "fullName");
 
-    const collections = [
+    let collections = [
       ...user.savedAlbums.map((album) => ({
         _id: album._id,
         title: album.title,
         creator: album.createdBy.fullName,
         imageUrl: album.imageUrl,
+        visibility: album.visibility,
         type: "album",
       })),
       ...playlists.map((playlist) => ({
@@ -108,14 +110,19 @@ export const getCollection = async (req, res, next) => {
         title: playlist.title,
         creator: playlist.createdBy.fullName,
         imageUrl: playlist.imageUrl,
+        visibility: playlist.visibility,
         type: "playlist",
       })),
     ];
-    let filteredCollection = collections;
-    if (type === "album" || type === "playlist") {
-      filteredCollection = collections.filter((c) => c.type === type);
+
+    if (type) {
+      collections = collections.filter((c) => c.type === type);
     }
-    return successResponse(res, 200, filteredCollection);
+
+    if (visibility) {
+      collections = collections.filter((c) => c.visibility === visibility);
+    }
+    return successResponse(res, 200, collections);
   } catch (error) {
     next(error);
   }
@@ -131,7 +138,7 @@ export const getCollectionById = async (req, res, next) => {
     if (albumExist) {
       const album = await Album.findById(id).populate({
         path: "createdBy",
-        select: "fullName",
+        select: "fullName imageUrl",
       });
       const songs = await Song.find({ album: id }).populate("album");
       const normalizedSongs = songs.map((song) => {
@@ -159,13 +166,13 @@ export const getCollectionById = async (req, res, next) => {
             },
           },
         })
-        .populate({ path: "createdBy", select: "fullName" })
-        .populate({ path: "collaborators", select: "fullName" });
+        .populate({ path: "createdBy", select: "fullName imageUrl" })
+        .populate({ path: "collaborators", select: "fullName imageUrl" });
       const normalizedSongs = playlist.songs.map((s) => ({
         ...s.song.toObject(),
         imageUrl: s.song.album?.imageUrl || null,
-        addedBy: s.addedBy,
-        createdAt: s.addedAt,
+        addedBy: s.addedBy || null,
+        createdAt: s.addedAt || null,
       }));
 
       normalizedSongs.forEach((song) => {
@@ -277,14 +284,26 @@ export const addLikedSong = async (req, res, next) => {
   try {
     const exist = await Song.exists({ _id: songId });
     if (!exist) throw new AppError("Song not found", 404);
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
+    const user = await User.findById(userId).select("likedPlaylist");
+    if (!user.likedPlaylist)
+      throw new AppError("Liked playlist not found", 404);
+
+    const updatedPlaylist = await Playlist.findByIdAndUpdate(
       {
-        $addToSet: { likedSongs: songId },
+        _id: user.likedPlaylist,
+        "songs.song": { $ne: songId },
+      },
+      {
+        $push: {
+          songs: {
+            song: songId,
+            addedBy: userId,
+          },
+        },
       },
       { new: true },
     );
-    return successResponse(res, 200, updatedUser);
+    return successResponse(res, 200, updatedPlaylist);
   } catch (error) {
     next(error);
   }
@@ -296,14 +315,21 @@ export const removeLikedSong = async (req, res, next) => {
   try {
     const exist = await Song.exists({ _id: songId });
     if (!exist) throw new AppError("Song not found", 404);
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
+    const user = await User.findById(userId).select("likedPlaylist");
+    if (!user.likedPlaylist)
+      throw new AppError("Liked playlist not found", 404);
+
+    const updatedPlaylist = await Playlist.findByIdAndUpdate(
       {
-        $pull: { likedSongs: songId },
+        _id: user.likedPlaylist,
+        "songs.song": songId,
+      },
+      {
+        $pull: { songs: { song: songId } },
       },
       { new: true },
     );
-    return successResponse(res, 200, updatedUser);
+    return successResponse(res, 200, updatedPlaylist);
   } catch (error) {
     next(error);
   }

@@ -5,6 +5,7 @@ interface AuthStore {
   isAdmin: boolean;
   error: string | null;
   isLoading: boolean;
+
   fetchAdminStatus: () => Promise<void>;
   reset: () => void;
 }

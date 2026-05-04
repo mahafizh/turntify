@@ -1,6 +1,6 @@
 import { Headphones, Library, Plus } from "lucide-react";
-import LibraryAlbum from "./LibraryAlbum";
-import { Button } from "./ui/button";
+import LibraryCollection from "./LibraryCollection";
+import { Button } from "../ui/button";
 import { useEffect, useState } from "react";
 import { useMusicStore } from "@/stores/useMusicStore";
 import {
@@ -8,13 +8,15 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
+} from "../ui/dropdown-menu";
 import { usePlaylistStore } from "@/stores/usePlaylistStore";
+import { useUser } from "@clerk/clerk-react";
 
 export default function LibraryMenu() {
   const { collections, fetchCollections } = useMusicStore();
   const { CreatePlaylist } = usePlaylistStore();
   const [active, setActive] = useState<"album" | "playlist" | null>(null);
+  const { isSignedIn } = useUser();
 
   useEffect(() => {
     fetchCollections();
@@ -77,7 +79,11 @@ export default function LibraryMenu() {
       </div>
       <div className="fkex-1 overflow-y-auto mt-3 no-scrollbar">
         <div className="space-y-2">
-          <LibraryAlbum collections={collections} />
+          {isSignedIn ? (
+            <LibraryCollection collections={collections} />
+          ) : (
+            <div>test</div>
+          )}
         </div>
       </div>
     </div>

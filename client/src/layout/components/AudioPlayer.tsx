@@ -5,8 +5,9 @@ export default function AudioPlayer() {
   const audioRef = useRef<HTMLAudioElement>(null);
   const prevSongRef = useRef<string | null>(null);
 
-  const { currentSong, isPlaying, playNext } = usePlayerStore();
-  
+  const { currentSong, isPlaying, playNext, incrementPlayCount, loopMode } =
+    usePlayerStore();
+
   useEffect(() => {
     if (isPlaying) {
       audioRef.current?.play();
@@ -19,11 +20,21 @@ export default function AudioPlayer() {
     const audio = audioRef.current;
 
     const handleEnded = () => {
-      playNext();
+      if (currentSong?._id) incrementPlayCount(currentSong._id);
+
+      if (loopMode === "one") {
+        if (audio) {
+          audio.currentTime = 0;
+          audio.play();
+        }
+      } else {
+        playNext();
+      }
     };
+
     audio?.addEventListener("ended", handleEnded);
     return () => audio?.removeEventListener("ended", handleEnded);
-  }, [playNext]);
+  }, [playNext, currentSong?._id, loopMode]);
 
   useEffect(() => {
     if (!audioRef.current || !currentSong) return;

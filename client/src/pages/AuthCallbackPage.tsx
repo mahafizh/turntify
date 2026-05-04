@@ -21,6 +21,7 @@ export default function AuthCallback() {
           firstName: user.firstName,
           lastName: user.lastName,
           imageUrl: user.imageUrl,
+          email: user.primaryEmailAddress?.emailAddress
         });
       } catch (error) {
         console.error(error);

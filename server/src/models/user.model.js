@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { Schema } from "mongoose";
 
 const userSchema = new mongoose.Schema(
   {
@@ -18,7 +18,18 @@ const userSchema = new mongoose.Schema(
     friends: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     playlists: [{ type: mongoose.Schema.Types.ObjectId, ref: "Playlist" }],
     savedAlbums: [{ type: mongoose.Schema.Types.ObjectId, ref: "Album" }],
-    likedSongs: [{ type: mongoose.Schema.Types.ObjectId, ref: "Song" }],
+    likedPlaylist: { type: mongoose.Schema.Types.ObjectId, ref: "Playlist" },
+    currentPlaying: {
+      song: { type: Schema.Types.ObjectId, ref: "Song" },
+      isPlaying: { type: Boolean, default: false },
+      updatedAt: { type: Date, default: Date.now },
+    },
+    lastPlayed: [
+      {
+        songId: { type: Schema.Types.ObjectId, ref: "Song" },
+        playedAt: { type: Date, default: Date.now },
+      },
+    ],
   },
   { timestamps: true },
 );

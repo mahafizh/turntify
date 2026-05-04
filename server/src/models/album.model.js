@@ -27,7 +27,17 @@ const albumSchema = new mongoose.Schema(
       required: true,
     },
   },
-  { timestamps: true },
+  {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  },
 );
+
+albumSchema.virtual("songs", {
+  ref: "Song",
+  localField: "_id",
+  foreignField: "album",
+});
 
 export const Album = mongoose.model("Album", albumSchema);

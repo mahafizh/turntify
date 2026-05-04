@@ -6,11 +6,13 @@ import {
   deleteAlbum,
   getAlbum,
   getAlbumById,
+  getMadeForYouAlbums,
   updateAlbum,
 } from "../controller/album.controller.js";
 
 const router = Router();
 
+router.get("/made-for-you", getMadeForYouAlbums);
 router.use(requireAuth(), authUser);
 router.get("/", getAlbum);
 router.post("/", createAlbum);

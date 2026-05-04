@@ -1,6 +1,6 @@
 import greetings from "@/lib/greetings";
 import type { Song } from "@/types";
-import PlayButton from "./PlayButton";
+import PlayButton from "../PlayButton";
 
 export default function FeaturedSong({ featured }: any) {
   return (

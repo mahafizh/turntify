@@ -12,7 +12,7 @@ export const getPlaylist = async (req, res, next) => {
   try {
     const playlist = await Playlist.find({
       $or: [{ createdBy: userId }, { collaborators: userId }],
-    })
+    });
     return successResponse(res, 200, playlist);
   } catch (error) {
     next(error);
@@ -24,13 +24,16 @@ export const getPlaylistById = async (req, res, next) => {
     const { id } = req.params;
     // const playlistExist = await Playlist.exists({ _id: id });
     // if (!playlistExist) throw new AppError("Playlist not found", 404);
-    const playlist = await Playlist.findById(id).populate({
-      path: "songs",
-      populate: {
-        path: "song",
-        select: "title duration performer played",
-      },
-    });
+    const playlist = await Playlist.findById(id)
+      .populate({
+        path: "songs",
+        populate: {
+          path: "song",
+          select: "title duration performer played",
+        },
+      })
+      .populate({ path: "createdBy", select: "fullName" })
+      .populate({ path: "collaborators", select: "fullName" });
     let totalDuration = 0;
     playlist.songs.map((s) => {
       totalDuration += s.song.duration;

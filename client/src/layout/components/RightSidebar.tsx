@@ -9,14 +9,14 @@ import { Link } from "react-router";
 
 export default function RightSidebar() {
   const { friends, fetchFriend } = useChatStore();
-  const { user } = useUser();
+  const { isSignedIn } = useUser();
   useEffect(() => {
     fetchFriend();
-  }, [friends, fetchFriend, user]);
+  }, [friends, fetchFriend]);
 
   return (
     <div className="h-[calc(100vh-120px)] bg-zinc-900 rounded-md flex flex-col p-4 ">
-      {user ? (
+      {isSignedIn ? (
         <div>
           <div className="flex flex-col justify-between border-zinc-800 border-b">
             <div className="flex flex-row gap-2 items-center mb-2">

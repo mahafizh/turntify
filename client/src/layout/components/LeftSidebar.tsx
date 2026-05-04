@@ -1,4 +1,4 @@
-import LibraryMenu from "@/components/LibraryMenu";
+import LibraryMenu from "@/components/libraryMenu/LibraryMenu";
 import NavMenu from "@/components/NavMenu";
 
 export default function LeftSidebar() {
