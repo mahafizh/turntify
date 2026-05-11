@@ -25,10 +25,9 @@ export const getUserById = async (req, res, next) => {
   const { id } = req.params;
   try {
     const user = await User.findById(id)
-      .populate("friends", "fullName")
-      .populate("savedAlbums", "title")
-      .populate("playlists", "title")
-      .populate("likedSongs", "title");
+      .select("-clerkId")
+      .populate({ path: "friends", select: "fullName imageUrl" })
+      .populate({ path: "playlists", select: "title imageUrl visibility" });
     if (!user) {
       throw new AppError("User not found", 404);
     }
@@ -62,15 +61,72 @@ export const updateUser = async (req, res, next) => {
   }
 };
 
+export const updateActivity = async (req, res, next) => {
+  const userId = req.user._id;
+  const { songId, isPlaying } = req.body;
+
+  try {
+    await User.findByIdAndUpdate(userId, {
+      $set: {
+        "currentPlaying.song": songId,
+        "currentPlaying.isPlaying": isPlaying,
+      },
+      $pull: { lastPlayed: { song: songId } },
+    });
+
+    if (isPlaying) {
+      await User.findByIdAndUpdate(userId, {
+        $push: {
+          lastPlayed: {
+            $each: [{ song: songId, playedAt: new Date() }],
+            $position: 0,
+            $slice: 30,
+          },
+        },
+      });
+    }
+
+    return successResponse(res, 204);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// get /api/users/friends
 export const getFriend = async (req, res, next) => {
   const userId = req.user._id;
   try {
-    const user = await User.findById(userId).populate(
-      "friends",
-      "fullName imageUrl",
-    );
-    const friends = user.friends;
-    return successResponse(res, 200, friends);
+    const user = await User.findById(userId).populate({
+      path: "friends",
+      select: "fullName imageUrl currentPlaying lastPlayed",
+      populate: [
+        {
+          path: "currentPlaying.song",
+          select: "title performer imageUrl",
+        },
+        {
+          path: "lastPlayed.song",
+          select: "title performer imageUrl",
+        },
+      ],
+    });
+
+    if (!user) return next(new Error("User not found"));
+    const friendsData = user.friends.map((friend) => {
+      const friendObj = friend.toObject();
+
+      if (friendObj.lastPlayed && friendObj.lastPlayed.length > 0) {
+        const sortedHistory = friendObj.lastPlayed.sort(
+          (a, b) =>
+            new Date(b.playedAt).getTime() - new Date(a.playedAt).getTime(),
+        );
+        friendObj.lastPlayed = [sortedHistory[0]];
+      }
+
+      return friendObj;
+    });
+
+    return successResponse(res, 200, friendsData);
   } catch (error) {
     next(error);
   }
@@ -234,7 +290,7 @@ export const removeSavedAlbum = async (req, res, next) => {
       },
       { new: true },
     );
-    return successResponse(res, 200, updatedUser);
+    return successResponse(res, 204);
   } catch (error) {
     next(error);
   }
@@ -253,7 +309,7 @@ export const addPlaylist = async (req, res, next) => {
       },
       { new: true },
     );
-    return successResponse(res, 200, updatedUser);
+    return successResponse(res, 204);
   } catch (error) {
     next(error);
   }
@@ -272,7 +328,7 @@ export const removePlaylist = async (req, res, next) => {
       },
       { new: true },
     );
-    return successResponse(res, 200, updatedUser);
+    return successResponse(res, 204);
   } catch (error) {
     next(error);
   }
@@ -303,7 +359,7 @@ export const addLikedSong = async (req, res, next) => {
       },
       { new: true },
     );
-    return successResponse(res, 200, updatedPlaylist);
+    return successResponse(res, 204);
   } catch (error) {
     next(error);
   }
@@ -329,7 +385,7 @@ export const removeLikedSong = async (req, res, next) => {
       },
       { new: true },
     );
-    return successResponse(res, 200, updatedPlaylist);
+    return successResponse(res, 204);
   } catch (error) {
     next(error);
   }
@@ -350,7 +406,7 @@ export const addFriend = async (req, res, next) => {
       },
       { new: true },
     );
-    return successResponse(res, 200, updatedUser);
+    return successResponse(res, 204);
   } catch (error) {
     next(error);
   }
@@ -369,7 +425,7 @@ export const removeFriend = async (req, res, next) => {
       },
       { new: true },
     );
-    return successResponse(res, 200, updatedUser);
+    return successResponse(res, 204);
   } catch (error) {
     next(error);
   }

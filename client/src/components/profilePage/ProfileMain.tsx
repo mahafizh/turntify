@@ -1,19 +1,54 @@
 import ProfileHeader from "@/components/profilePage/ProfileHeader";
 import { useUserStore } from "@/stores/useUserStore";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import ProfileActionMenu from "./ProfileActionMenu";
 import CollectionCard from "../CollectionCard";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import CollectionSkeleton from "../collectionPage/CollectionSkeleton";
+import { useParams } from "react-router";
+import type { User } from "@/types";
 
 export default function ProfileMain() {
-  const { fetchUser, user, isLoading } = useUserStore();
+  const {
+    fetchUser,
+    user: currentUser,
+    selectedUser,
+  } = useUserStore();
+  const { id } = useParams();
+
+  const [profileData, setProfileData] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const isMyOwnProfile = !id || id === currentUser?._id;
 
   useEffect(() => {
-    fetchUser();
-  }, []);
+    const loadProfile = async () => {
+      setIsLoading(true);
+      try {
+        if (isMyOwnProfile) {
+          await fetchUser();
+        } else {
+          await fetchUser(id);
+        }
+      } catch (error) {
+        console.error("Error loading profile:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const publicPlaylist = user?.playlists.filter(
+    loadProfile();
+  }, [IdleDeadline, isMyOwnProfile]);
+
+  useEffect(() => {
+    if (isMyOwnProfile && currentUser) {
+      setProfileData(currentUser);
+    } else if (!isMyOwnProfile && selectedUser) {
+      setProfileData(selectedUser);
+    }
+  }, [currentUser, selectedUser, isMyOwnProfile]);
+
+  const publicPlaylist = profileData?.playlists.filter(
     (p) => p.visibility === "public",
   );
 
@@ -35,11 +70,13 @@ export default function ProfileMain() {
   return (
     <div className="relative">
       <div className="relative z-10 ">
-        {user && <ProfileHeader currentUser={user} />}
+        {profileData && <ProfileHeader currentUser={profileData} />}
 
         <div className="flex-col p-4 bg-linear-to-b from-black/2 via-black/10 to-black/15 backdrop-blur-sm h-[calc(100vh-20px)] rounded-md">
-          <ProfileActionMenu />
-          {!isLoading ? (
+          {!isLoading && profileData && (
+            <ProfileActionMenu isMyOwnProfile={isMyOwnProfile} userId={id} />
+          )}
+          {!isLoading && profileData ? (
             <div className="p-4 relative">
               <div className="w-full min-w-0">
                 <h1 className="mb-3 text-white text-3xl font-bold flex justify-between items-center">
@@ -69,7 +106,7 @@ export default function ProfileMain() {
                           key={p._id}
                           id={p._id}
                           title={p.title}
-                          creatorName={user?.fullName}
+                          creatorName={profileData?.fullName}
                           imageUrl={p.imageUrl}
                         />
                       ))}

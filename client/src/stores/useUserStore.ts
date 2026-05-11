@@ -6,8 +6,9 @@ interface UserStore {
   error: string | null;
   isLoading: boolean;
   user: User | null;
+  selectedUser: User | null;
 
-  fetchUser: () => Promise<void>;
+  fetchUser: (id?: string) => Promise<void>;
   updateUser: (
     userId: string,
     data: {
@@ -21,12 +22,21 @@ export const useUserStore = create<UserStore>((set) => ({
   error: null,
   isLoading: false,
   user: null,
+  selectedUser: null,
 
-  fetchUser: async () => {
+  fetchUser: async (id) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axiosInstance("/auth/me");
-      set({ user: response.data.data });
+      let url;
+      if (id) {
+        url = `/users/${id}`;
+      } else {
+        url = "/auth/me";
+      }
+      console.log(url)
+      const response = await axiosInstance(url);
+      if (id) set({ selectedUser: response.data.data });
+      else set({ user: response.data.data });
     } catch (error: any) {
       set({ error: error.response.message });
     } finally {

@@ -7,7 +7,7 @@ export const setTokenGetter = (fn: () => Promise<string | null>) => {
 };
 
 export const axiosInstance = axios.create({
-  baseURL: "http://localhost:5000/api",
+  baseURL: `${import.meta.env.VITE_API_URL}/api`,
 });
 
 axiosInstance.interceptors.request.use(async (config) => {

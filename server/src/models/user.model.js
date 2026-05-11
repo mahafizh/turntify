@@ -22,11 +22,10 @@ const userSchema = new mongoose.Schema(
     currentPlaying: {
       song: { type: Schema.Types.ObjectId, ref: "Song" },
       isPlaying: { type: Boolean, default: false },
-      updatedAt: { type: Date, default: Date.now },
     },
     lastPlayed: [
       {
-        songId: { type: Schema.Types.ObjectId, ref: "Song" },
+        song: { type: Schema.Types.ObjectId, ref: "Song" },
         playedAt: { type: Date, default: Date.now },
       },
     ],

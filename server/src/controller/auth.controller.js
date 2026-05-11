@@ -13,10 +13,18 @@ export const authCallback = async (req, res) => {
     const { id, firstName, lastName, email, imageUrl } = req.body;
     let user = await User.findOne({ clerkId: id }).session(session);
 
+    let fullName;
+
+    if (firstName && lastName) {
+      fullName = `${firstName} ${lastName}`;
+    } else {
+      fullName = firstName || lastName;
+    }
+
     if (!user) {
       user = new User({
         clerkId: id,
-        fullName: `${firstName} ${lastName}`,
+        fullName: fullName,
         imageUrl: imageUrl,
         email: email,
       });

@@ -9,16 +9,11 @@ import DashboardPage from "./pages/DashboardPage";
 import { useEffect } from "react";
 import ProfilePage from "./pages/ProfilePage";
 import { useUserStore } from "./stores/useUserStore";
+import { connectSocket, disconnectSocket } from "./lib/socket";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, fetchUser } = useUserStore();
-
-  useEffect(() => {
-    if (!user) fetchUser();
-  }, [user, fetchUser]);
-
   const { isLoaded, isSignedIn, user: clerkUser } = useUser();
-
+  
   if (!isLoaded) return <div>Loading...</div>;
 
   const userEmailAddress = clerkUser?.primaryEmailAddress?.emailAddress;
@@ -32,6 +27,25 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
+  const { user, fetchUser } = useUserStore();
+  const { isSignedIn, isLoaded } = useUser();
+
+  useEffect(() => {
+    if (isSignedIn) fetchUser();
+  }, [isSignedIn, fetchUser]);
+
+  useEffect(() => {
+    if (user?._id) {
+      connectSocket(user._id);
+    }
+
+    return () => {
+      disconnectSocket();
+    };
+  }, [user?._id]);
+
+  if (!isLoaded) return null;
+
   return (
     <Routes>
       <Route
@@ -48,7 +62,7 @@ function App() {
         <Route index element={<HomePage />} />
         <Route path="chat" element={<ChatPage />} />
         <Route path="collections/:collectionId" element={<CollectionPage />} />
-        <Route path="profile" element={<ProfilePage />} />
+        <Route path="profile/:id?" element={<ProfilePage />} />
       </Route>
 
       <Route
@@ -58,7 +72,7 @@ function App() {
             <DashboardPage />
           </ProtectedRoute>
         }
-      ></Route>
+      />
     </Routes>
   );
 }

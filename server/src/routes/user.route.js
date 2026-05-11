@@ -11,12 +11,12 @@ import {
   getCollection,
   getCollectionById,
   getFriend,
-  // getLikedSongs,
   getUserById,
   removeFriend,
   removeLikedSong,
   removePlaylist,
   removeSavedAlbum,
+  updateActivity,
   updateUser,
 } from "../controller/user.controller.js";
 
@@ -41,10 +41,9 @@ router.patch("/songs/:songId", removeLikedSong);
 router.get("/collections", getCollection);
 router.get("/collections/:id", getCollectionById);
 
-// router.get("/liked-songs", getLikedSongs)
-
 router.get("/", getAllUser);
 router.get("/:id", getUserById);
 router.patch("/:id", updateUser);
+router.post("/update-activity", updateActivity);
 
 export default router;

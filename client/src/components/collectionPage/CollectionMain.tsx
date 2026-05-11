@@ -36,7 +36,7 @@ interface CollectionMainProps {
 
 export default function CollectionMain({
   currentCollection,
-  collectionId
+  collectionId,
 }: CollectionMainProps) {
   const {
     fetchCollectionById,
@@ -100,7 +100,7 @@ export default function CollectionMain({
           <CollectionHeader currentCollection={currentCollection} />
         )}
         <div className="flex-col p-4 bg-linear-to-b from-black/20 via-black/35 to-black/60 backdrop-blur-sm h-[calc(100vh-20px)] rounded-md">
-          {currentCollection && (
+          {currentCollection.title !== "Liked Songs" && currentCollection && (
             <CollectionActionMenu
               collectionId={collectionId || ""}
               currentCollection={currentCollection}

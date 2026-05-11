@@ -3,12 +3,6 @@ export interface Genre {
   title: string;
 }
 
-export interface Friend {
-  _id: string;
-  fullName: string;
-  imageUrl: string;
-}
-
 export interface Stats {
   totalSongs: number;
   totalAlbums: number;
@@ -58,10 +52,9 @@ export interface Song {
   createdBy: User;
   album: Album | null;
   played: number;
+  imageUrl: string;
   createdAt: Date;
   updatedAt: Date;
-  imageUrl: string | null;
-  addedBy: string | null;
 }
 
 export interface Collection {
@@ -95,6 +88,11 @@ export interface CurrentCollection {
   songs: Song[];
 }
 
+interface lastPlayed {
+  song: Song | null;
+  playedAt: Date;
+}
+
 export interface User {
   _id: string;
   fullName: string;
@@ -103,6 +101,24 @@ export interface User {
   savedAlbums: Album[];
   playlists: Playlist[];
   likedSongs: Song[];
+  currentPlaying: {
+    song: Song | null;
+    isPlaying: boolean;
+  };
+  lastPlayed: lastPlayed[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Friend {
+  _id: string;
+  fullName: string;
+  imageUrl: string;
+  currentPlaying: {
+    song: Song | null;
+    isPlaying: boolean;
+  };
+  lastPlayed: lastPlayed[];
   createdAt: Date;
   updatedAt: Date;
 }
