@@ -28,6 +28,8 @@ import SearchCollection from "@/components/collectionPage/SearchCollection";
 import CollectionHeader from "@/components/collectionPage/CollectionHeader";
 import CollectionActionMenu from "@/components/collectionPage/CollectionActionMenu";
 import type { CurrentCollection } from "@/types";
+import { useSongStore } from "@/stores/useSongStore";
+import { useUserStore } from "@/stores/useUserStore";
 
 interface CollectionMainProps {
   currentCollection: CurrentCollection;
@@ -45,13 +47,15 @@ export default function CollectionMain({
     AddLikedSong,
     RemoveLikedSong,
   } = useMusicStore();
+  const { user } = useUserStore();
   const { currentSong, isPlaying, playCollection } = usePlayerStore();
-  const {
-    playlists,
-    fetchPlaylist,
-    AddSongToPlaylist,
-    RemoveSongFromPlaylist,
-  } = usePlaylistStore();
+  const { playlists, fetchPlaylist } = usePlaylistStore();
+  const { AddSongToPlaylist, RemoveSongFromPlaylist } = useSongStore();
+
+  const isMyOwnCollection = currentCollection?.createdBy._id === user?._id;
+  const isCollaborator = !!currentCollection.collaborators?.some(
+    (c) => c._id === user?._id,
+  );
 
   useEffect(() => {
     fetchPlaylist();
@@ -97,13 +101,18 @@ export default function CollectionMain({
     <div className="relative">
       <div className="relative z-10">
         {currentCollection && (
-          <CollectionHeader currentCollection={currentCollection} />
+          <CollectionHeader
+            currentCollection={currentCollection}
+            isMyOwnCollection={isMyOwnCollection}
+          />
         )}
         <div className="flex-col p-4 bg-linear-to-b from-black/20 via-black/35 to-black/60 backdrop-blur-sm h-[calc(100vh-20px)] rounded-md">
           {currentCollection.title !== "Liked Songs" && currentCollection && (
             <CollectionActionMenu
               collectionId={collectionId || ""}
               currentCollection={currentCollection}
+              isMyOwnCollection={isMyOwnCollection}
+              isCollaborator={isCollaborator}
             />
           )}
           <div className="mt-6">

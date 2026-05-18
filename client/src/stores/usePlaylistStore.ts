@@ -9,8 +9,6 @@ interface PlaylistStore {
 
   CreatePlaylist: () => Promise<void>;
   fetchPlaylist: () => Promise<void>;
-  AddSongToPlaylist: (songId: string, playlistId: string) => Promise<void>;
-  RemoveSongFromPlaylist: (songId: string, playlistId: string) => Promise<void>;
   DeletePlaylist: (playlistId: string) => Promise<void>;
   UpdatePlaylist: (
     type: "update" | "visibility",
@@ -22,12 +20,44 @@ interface PlaylistStore {
       visibility?: string;
     },
   ) => Promise<void>;
+  addCollaboratorToPlaylist: (
+    playlistId: string,
+    userId: string,
+  ) => Promise<void>;
+  removeCollaboratorFromPlaylist: (
+    playlistId: string,
+    userId: string,
+  ) => Promise<void>;
 }
 
 export const usePlaylistStore = create<PlaylistStore>((set) => ({
   isLoading: false,
   error: null,
   playlists: [],
+
+  addCollaboratorToPlaylist: async (playlistId, userId) => {
+    set({ isLoading: true, error: null });
+    try {
+      await axiosInstance.patch(`/playlists/${playlistId}/users/${userId}`);
+    } catch (error: any) {
+      const errMsg = error.response.data.message;
+      throw new Error(errMsg);
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  removeCollaboratorFromPlaylist: async (playlistId, userId) => {
+    set({ isLoading: true, error: null });
+    try {
+      await axiosInstance.delete(`/playlists/${playlistId}/users/${userId}`);
+    } catch (error: any) {
+      const errMsg = error.response.data.message;
+      throw new Error(errMsg);
+    } finally {
+      set({ isLoading: false });
+    }
+  },
 
   UpdatePlaylist: async (type, playlistId, data) => {
     set({ isLoading: true, error: null });
@@ -77,28 +107,6 @@ export const usePlaylistStore = create<PlaylistStore>((set) => ({
     set({ isLoading: true, error: null });
     try {
       await axiosInstance.post("/playlists");
-    } catch (error: any) {
-      set({ error: error.response.data.message });
-    } finally {
-      set({ isLoading: false });
-    }
-  },
-
-  AddSongToPlaylist: async (songId, playlistId) => {
-    set({ isLoading: true, error: null });
-    try {
-      await axiosInstance.patch(`/songs/${songId}/playlists/${playlistId}`);
-    } catch (error: any) {
-      set({ error: error.response.data.message });
-    } finally {
-      set({ isLoading: false });
-    }
-  },
-
-  RemoveSongFromPlaylist: async (songId, playlistId) => {
-    set({ isLoading: true, error: null });
-    try {
-      await axiosInstance.delete(`/songs/${songId}/playlists/${playlistId}`);
     } catch (error: any) {
       set({ error: error.response.data.message });
     } finally {

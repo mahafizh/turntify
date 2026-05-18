@@ -19,6 +19,8 @@ interface AlbumStore {
   ) => Promise<void>;
   fetchAlbum: (userId?: string) => Promise<void>;
   deleteAlbum: (albumId: string) => Promise<void>;
+  addAlbumToCollection: (albumId: string) => Promise<void>;
+  removeAlbumFromCollection: (albumId: string) => Promise<void>;
 }
 
 export const useAlbumStore = create<AlbumStore>((set) => ({
@@ -33,7 +35,8 @@ export const useAlbumStore = create<AlbumStore>((set) => ({
       const response = await axiosInstance.get("/albums/made-for-you");
       set({ madeForYou: response.data.data });
     } catch (error: any) {
-      set({ error: error.response.data.message });
+      const errMsg = error.response.data?.message;
+      throw new Error(errMsg);
     } finally {
       set({ isLoading: false });
     }
@@ -46,7 +49,8 @@ export const useAlbumStore = create<AlbumStore>((set) => ({
       const response = await axiosInstance.get(url);
       set({ albums: response.data.data });
     } catch (error: any) {
-      set({ error: error.response.data.message });
+      const errMsg = error.response.data?.message;
+      throw new Error(errMsg);
     } finally {
       set({ isLoading: false });
     }
@@ -66,7 +70,8 @@ export const useAlbumStore = create<AlbumStore>((set) => ({
         },
       });
     } catch (error: any) {
-      set({ error: error.response.data.message });
+      const errMsg = error.response.data?.message;
+      throw new Error(errMsg);
     } finally {
       set({ isLoading: false });
     }
@@ -99,7 +104,32 @@ export const useAlbumStore = create<AlbumStore>((set) => ({
     try {
       await axiosInstance.delete(`/albums/${albumId}`);
     } catch (error: any) {
-      set({ error: error.response.data.message });
+      const errMsg = error.response.data?.message;
+      throw new Error(errMsg);
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  addAlbumToCollection: async (albumId) => {
+    set({ isLoading: true, error: null });
+    try {
+      await axiosInstance.post(`/users/albums/${albumId}`);
+    } catch (error: any) {
+      const errMsg = error.response.data?.message;
+      throw new Error(errMsg);
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  removeAlbumFromCollection: async (albumId) => {
+    set({ isLoading: true, error: null });
+    try {
+      await axiosInstance.patch(`/users/albums/${albumId}`);
+    } catch (error: any) {
+      const errMsg = error.response.data?.message;
+      throw new Error(errMsg);
     } finally {
       set({ isLoading: false });
     }

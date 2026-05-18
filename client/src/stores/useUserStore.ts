@@ -33,7 +33,6 @@ export const useUserStore = create<UserStore>((set) => ({
       } else {
         url = "/auth/me";
       }
-      console.log(url)
       const response = await axiosInstance(url);
       if (id) set({ selectedUser: response.data.data });
       else set({ user: response.data.data });

@@ -63,6 +63,12 @@ export const useSocialStore = create<SocialStore>((set) => ({
               song: data.song,
               isPlaying: data.isPlaying,
             },
+            lastPlayed: data.isPlaying
+              ? friend.lastPlayed
+              : [
+                  { song: data.song, playedAt: new Date() },
+                  ...friend.lastPlayed,
+                ].slice(0, 1),
           };
         }
         return friend;

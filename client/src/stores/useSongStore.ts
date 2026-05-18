@@ -40,6 +40,8 @@ interface SongStore {
   deleteSong: (songId: string) => Promise<void>;
   addSongToAlbum: (songId: string, albumId: string) => Promise<void>;
   removeSongFromAlbum: (songId: string, albumId: string) => Promise<void>;
+  AddSongToPlaylist: (songId: string, playlistId: string) => Promise<void>;
+  RemoveSongFromPlaylist: (songId: string, playlistId: string) => Promise<void>;
 }
 
 export const useSongStore = create<SongStore>((set) => ({
@@ -115,11 +117,6 @@ export const useSongStore = create<SongStore>((set) => ({
           formData.append("genres", id);
         });
       }
-
-      // formData.forEach((value, key) => {
-      //   console.log(key, value);
-      // });
-
       await axiosInstance.patch(`/songs/${id}`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
@@ -150,6 +147,28 @@ export const useSongStore = create<SongStore>((set) => ({
       await axiosInstance.delete(`/songs/${songId}/albums/${albumId}`);
     } catch (error: any) {
       set({ error: error.response.message });
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  AddSongToPlaylist: async (songId, playlistId) => {
+    set({ isLoading: true, error: null });
+    try {
+      await axiosInstance.patch(`/songs/${songId}/playlists/${playlistId}`);
+    } catch (error: any) {
+      set({ error: error.response.data.message });
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  RemoveSongFromPlaylist: async (songId, playlistId) => {
+    set({ isLoading: true, error: null });
+    try {
+      await axiosInstance.delete(`/songs/${songId}/playlists/${playlistId}`);
+    } catch (error: any) {
+      set({ error: error.response.data.message });
     } finally {
       set({ isLoading: false });
     }

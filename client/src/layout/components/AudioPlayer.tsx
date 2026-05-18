@@ -58,34 +58,35 @@ export default function AudioPlayer() {
   }, [currentSong, isPlaying]);
 
   useEffect(() => {
-    if (!user || !currentSong || !socket) return;
+    if (!user || !currentSong) return;
 
-    socket.emit("update_activity", {
-      userId: user._id,
-      userName: user.fullName,
-      userImageUrl: user.imageUrl,
-      isPlaying,
-      song: {
-        title: currentSong.title,
-        performer: currentSong.performer,
-        imageUrl: currentSong.album?.imageUrl,
-      },
-    });
-
-    const updateDbActivity = async () => {
+    const updateActivity = async () => {
       try {
         await axiosInstance.post("/users/update-activity", {
           songId: currentSong._id,
           isPlaying,
         });
+
+        if (socket) {
+          socket.emit("update_activity", {
+            userId: user._id,
+            isPlaying,
+            song: {
+              title: currentSong.title,
+              performer: currentSong.performer,
+              imageUrl: currentSong.imageUrl,
+              album: { title: currentSong.album?.title },
+            },
+          });
+        }
       } catch (error) {
-        console.error("Failed to update activity in DB", error);
+        console.error("Failed to update activity", error);
       }
     };
-    const timeoutId = setTimeout(updateDbActivity, 2000);
-    return () => clearTimeout(timeoutId);
 
-  }, [currentSong, isPlaying, user, socket]);
+    const timeoutId = setTimeout(updateActivity, 500);
+    return () => clearTimeout(timeoutId);
+  }, [isPlaying, currentSong?._id, user?._id]);
 
   return <audio ref={audioRef} />;
 }

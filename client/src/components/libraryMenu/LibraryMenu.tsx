@@ -82,7 +82,7 @@ export default function LibraryMenu() {
           {isSignedIn ? (
             <LibraryCollection collections={collections} />
           ) : (
-            <div>test</div>
+            <div>Sign In First</div>
           )}
         </div>
       </div>

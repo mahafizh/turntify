@@ -1,15 +1,16 @@
 import { io, Socket } from "socket.io-client";
 
-// Gunakan variable environment untuk URL Backend kamu
 const SOCKET_URL = import.meta.env.VITE_API_URL;
 
 let socket: Socket | null = null;
 
-export const connectSocket = (userId: string) => {
-  if (!socket) {
+export const getSocket = (userId?: string) => {
+  if (!socket && userId) {
+    console.log("Initializing socket connection for user:", userId);
     socket = io(SOCKET_URL, {
       query: { userId },
-      transports: ["websocket"],
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
     });
 
     socket.on("connect", () => {
@@ -23,11 +24,10 @@ export const connectSocket = (userId: string) => {
   return socket;
 };
 
-export const getSocket = () => socket;
-
 export const disconnectSocket = () => {
   if (socket) {
     socket.disconnect();
     socket = null;
+    console.log("Socket disconnected");
   }
 };

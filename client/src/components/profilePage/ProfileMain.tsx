@@ -9,11 +9,7 @@ import { useParams } from "react-router";
 import type { User } from "@/types";
 
 export default function ProfileMain() {
-  const {
-    fetchUser,
-    user: currentUser,
-    selectedUser,
-  } = useUserStore();
+  const { fetchUser, user: currentUser, selectedUser } = useUserStore();
   const { id } = useParams();
 
   const [profileData, setProfileData] = useState<User | null>(null);
@@ -38,7 +34,7 @@ export default function ProfileMain() {
     };
 
     loadProfile();
-  }, [IdleDeadline, isMyOwnProfile]);
+  }, [id, isMyOwnProfile]);
 
   useEffect(() => {
     if (isMyOwnProfile && currentUser) {
@@ -69,14 +65,11 @@ export default function ProfileMain() {
 
   return (
     <div className="relative">
-      <div className="relative z-10 ">
-        {profileData && <ProfileHeader currentUser={profileData} />}
-
-        <div className="flex-col p-4 bg-linear-to-b from-black/2 via-black/10 to-black/15 backdrop-blur-sm h-[calc(100vh-20px)] rounded-md">
-          {!isLoading && profileData && (
+      {!isLoading && profileData ? (
+        <div className="relative z-10 ">
+          <ProfileHeader currentUser={profileData} />
+          <div className="flex-col p-4 bg-linear-to-b from-black/2 via-black/10 to-black/15 backdrop-blur-sm h-[calc(100vh-20px)] rounded-md">
             <ProfileActionMenu isMyOwnProfile={isMyOwnProfile} userId={id} />
-          )}
-          {!isLoading && profileData ? (
             <div className="p-4 relative">
               <div className="w-full min-w-0">
                 <h1 className="mb-3 text-white text-3xl font-bold flex justify-between items-center">
@@ -114,11 +107,11 @@ export default function ProfileMain() {
                 </div>
               </div>
             </div>
-          ) : (
-            <CollectionSkeleton />
-          )}
+          </div>
         </div>
-      </div>
+      ) : (
+        <CollectionSkeleton />
+      )}
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import SkeletonLayout from "@/layout/components/SkeletonLayout";
 import { axiosInstance, setTokenGetter } from "@/lib/axios";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useAuth } from "@clerk/clerk-react";
@@ -40,11 +41,7 @@ export default function AuthProviders({
   }, [getToken, isLoaded]);
 
   if (loading) {
-    return (
-      <div className="h-screen w-full flex items-center justify-center">
-        <Loader className="size-8 text-emerald-400 animate-spin" />
-      </div>
-    );
+    return <SkeletonLayout />;
   }
 
   return <>{children}</>;

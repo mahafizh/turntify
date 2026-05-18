@@ -81,7 +81,7 @@ export interface CurrentCollection {
   collection: "album" | "playlist";
   createdBy: CollectionUser;
   createdAt: string;
-  collaborators?: CollectionUser;
+  collaborators?: CollectionUser[];
   description?: string;
   duration: number;
   imageUrl: string;

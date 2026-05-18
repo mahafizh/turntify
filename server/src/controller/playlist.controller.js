@@ -12,6 +12,7 @@ export const getPlaylist = async (req, res, next) => {
   try {
     const playlist = await Playlist.find({
       $or: [{ createdBy: userId }, { collaborators: userId }],
+      title: { $ne: "Liked Songs" },
     });
     return successResponse(res, 200, playlist);
   } catch (error) {
@@ -147,22 +148,19 @@ export const deletePlaylist = async (req, res, next) => {
 
 export const addCollaboratorToPlaylist = async (req, res, next) => {
   const { playlistId, collaboratorId } = req.params;
+  console.log(req.params)
   const userId = req.user._id;
   try {
-    // const exist = await User.exists({ _id: collaboratorId });
-    // if (!exist) throw new AppError("User not found", 404);
-
     const playlist = await Playlist.findOneAndUpdate(
       {
         _id: playlistId,
-        createdBy: userId,
         collaborators: { $ne: collaboratorId },
       },
       { $addToSet: { collaborators: collaboratorId } },
       { new: true },
     );
     if (!playlist) throw new AppError("User already added", 400);
-    return successResponse(res, 200, playlist);
+    return successResponse(res, 204);
   } catch (error) {
     next(error);
   }
@@ -173,11 +171,11 @@ export const removeCollaboratorFromPlaylist = async (req, res, next) => {
   const userId = req.user._id;
   try {
     const playlist = await Playlist.findOneAndUpdate(
-      { _id: playlistId, createdBy: userId, collaborators: collaboratorId },
+      { _id: playlistId, collaborators: collaboratorId },
       { $pull: { collaborators: collaboratorId } },
       { new: true },
     );
-    return successResponse(res, 200, playlist);
+    return successResponse(res, 204);
   } catch (error) {
     next(error);
   }

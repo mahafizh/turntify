@@ -52,6 +52,7 @@ export default function SongForm({ song, trigger }: SongFormProps) {
 
   const handleAddSong = async (e: any) => {
     e.preventDefault();
+
     try {
       if (isEditMode) {
         await updateSong(
@@ -66,6 +67,13 @@ export default function SongForm({ song, trigger }: SongFormProps) {
           audioFile as File,
         );
       } else {
+        if (!audioFile) {
+          toast.error("Please select an audio file", {
+            position: "top-center",
+          });
+          return;
+        }
+
         await createSong(
           newSong.title,
           newSong.performer,

@@ -1,7 +1,7 @@
 import type { CurrentCollection } from "@/types";
 import { Button } from "@/components/ui/button";
 import { usePlayerStore } from "@/stores/usePlayerStore";
-import { Ellipsis, Heart, Pause, Play } from "lucide-react";
+import { CirclePlus, Ellipsis, Heart, Pause, Play } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,27 +19,46 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuPortal,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { usePlaylistStore } from "@/stores/usePlaylistStore";
 import { useMusicStore } from "@/stores/useMusicStore";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
+import { useAlbumStore } from "@/stores/useAlbumStore";
+import { useUserStore } from "@/stores/useUserStore";
 
 interface CollectionActionMenuProps {
   collectionId: string;
+  isMyOwnCollection: boolean;
+  isCollaborator: boolean;
   currentCollection: CurrentCollection;
 }
 export default function CollectionActionMenu({
   collectionId,
   currentCollection,
+  isMyOwnCollection,
+  isCollaborator,
 }: CollectionActionMenuProps) {
   const { togglePlay, playCollection, currentSong, isPlaying, addToQueue } =
     usePlayerStore();
-  const { UpdatePlaylist, DeletePlaylist } = usePlaylistStore();
-  const { fetchCollections, fetchCollectionById } = useMusicStore();
+  const {
+    playlists,
+    UpdatePlaylist,
+    DeletePlaylist,
+    addCollaboratorToPlaylist,
+    removeCollaboratorFromPlaylist,
+  } = usePlaylistStore();
+  const { collections, fetchCollections, fetchCollectionById } =
+    useMusicStore();
+  const { addAlbumToCollection, removeAlbumFromCollection } = useAlbumStore();
   const navigate = useNavigate();
+  const { user } = useUserStore();
 
   const handlePlayCollection = () => {
     if (!currentCollection) return;
@@ -85,6 +104,82 @@ export default function CollectionActionMenu({
     }
   };
 
+  const isCollectionLiked = collections.some(
+    (c) => c._id === currentCollection?._id,
+  );
+
+  const handleAddToCollection = async () => {
+    try {
+      await addAlbumToCollection(currentCollection._id);
+      toast.success("Album added to collection", {
+        position: "bottom-center",
+      });
+      await fetchCollections();
+    } catch (error) {
+      toast.error("Failed to add album to collection", {
+        position: "bottom-center",
+      });
+    }
+  };
+
+  const handleRemoveFromCollection = async () => {
+    try {
+      await removeAlbumFromCollection(currentCollection._id);
+      toast.success("Album removed from collection", {
+        position: "bottom-center",
+      });
+      await fetchCollections();
+    } catch (error) {
+      toast.error("Failed to remove album from collection", {
+        position: "bottom-center",
+      });
+    }
+  };
+
+  const handleCopyLink = () => {
+    try {
+      const url = `${window.location.origin}/collections/${currentCollection._id}`;
+      navigator.clipboard.writeText(url);
+      toast.success("Link copied to clipboard", {
+        position: "bottom-center",
+      });
+    } catch (error) {
+      toast.error("Failed to copy link to clipboard", {
+        position: "bottom-center",
+      });
+    }
+  };
+
+  const handleAddCollaborator = async () => {
+    if (currentCollection.collection !== "playlist" || !user?._id) return;
+    try {
+      await addCollaboratorToPlaylist(currentCollection._id, user._id);
+      toast.success("Playlist added to your collection", {
+        position: "bottom-center",
+      });
+      await fetchCollections();
+    } catch (error) {
+      toast.error("Failed to add playlist to your collection", {
+        position: "bottom-center",
+      });
+    }
+  };
+
+  const handleRemoveCollaborator = async () => {
+    if (currentCollection.collection !== "playlist" || !user?._id) return;
+    try {
+      await removeCollaboratorFromPlaylist(currentCollection._id, user._id);
+      toast.success("Playlist removed from your collection", {
+        position: "bottom-center",
+      });
+      await fetchCollections();
+    } catch (error) {
+      toast.error("Failed to remove playlist from your collection", {
+        position: "bottom-center",
+      });
+    }
+  };
+
   return (
     <div className="flex items-center gap-6">
       {currentCollection?.songs && currentCollection.songs.length > 0 && (
@@ -103,9 +198,13 @@ export default function CollectionActionMenu({
         </Button>
       )}
       {currentCollection?.collection === "album" && (
-        <Button className="hover:bg-black/0 group" variant="ghost" size="icon">
-          <Heart className="size-8 text-zinc-400 group-hover:text-zinc-200" />
-        </Button>
+        <Heart
+          onClick={() => {
+            if (isCollectionLiked) handleRemoveFromCollection();
+            else handleAddToCollection();
+          }}
+          className={`size-8 ${isCollectionLiked ? "text-green-500 fill-green-500 hover:scale-110" : "text-zinc-400 hover:text-zinc-200"}`}
+        />
       )}
       <AlertDialog>
         <DropdownMenu>
@@ -119,37 +218,86 @@ export default function CollectionActionMenu({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
+            {!isMyOwnCollection && (
+              <DropdownMenuGroup>
+                {!isCollaborator ? (
+                  <DropdownMenuItem onClick={handleAddCollaborator}>
+                    Add to collection
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem onClick={handleRemoveCollaborator}>
+                    Remove to collection
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+              </DropdownMenuGroup>
+            )}
             <DropdownMenuGroup>
               <DropdownMenuItem onClick={handleAddToQueue}>
                 Add to queue
               </DropdownMenuItem>
               <DropdownMenuSeparator />
             </DropdownMenuGroup>
-            {currentCollection?.collection === "playlist" && (
-              <DropdownMenuGroup>
-                <InputForm
-                  currentCollection={currentCollection}
-                  trigger={
-                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                      Edit details
+            {isMyOwnCollection &&
+              currentCollection?.collection === "playlist" && (
+                <DropdownMenuGroup>
+                  <InputForm
+                    currentCollection={currentCollection}
+                    trigger={
+                      <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                        Edit details
+                      </DropdownMenuItem>
+                    }
+                  />
+                  <AlertDialogTrigger asChild>
+                    <DropdownMenuItem>Delete</DropdownMenuItem>
+                  </AlertDialogTrigger>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleUpdateVisibility}>
+                    {currentCollection.visibility === "public"
+                      ? "Make private"
+                      : "Make public"}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleCopyLink}>
+                    Invite collaborators
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </DropdownMenuGroup>
+              )}
+            {currentCollection?.collection === "album" &&
+              currentCollection?.visibility === "public" && (
+                <DropdownMenuGroup>
+                  {isCollectionLiked ? (
+                    <DropdownMenuItem onClick={handleRemoveFromCollection}>
+                      Remove from Your Collection
                     </DropdownMenuItem>
-                  }
-                />
-                <AlertDialogTrigger asChild>
-                  <DropdownMenuItem>Delete</DropdownMenuItem>
-                </AlertDialogTrigger>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleUpdateVisibility}>
-                  {currentCollection.visibility === "public"
-                    ? "Make private"
-                    : "Make public"}
-                </DropdownMenuItem>
-                <DropdownMenuItem>Invite collaborators</DropdownMenuItem>
-                <DropdownMenuSeparator />
-              </DropdownMenuGroup>
-            )}
+                  ) : (
+                    <DropdownMenuItem onClick={handleAddToCollection}>
+                      Add to Your Collection
+                    </DropdownMenuItem>
+                  )}
+
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger>
+                      Add to playlist
+                    </DropdownMenuSubTrigger>
+                    <DropdownMenuPortal>
+                      <DropdownMenuSubContent>
+                        {playlists.map((playlist) => (
+                          <DropdownMenuItem key={playlist._id}>
+                            {playlist.title}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuSubContent>
+                    </DropdownMenuPortal>
+                  </DropdownMenuSub>
+                  <DropdownMenuSeparator />
+                </DropdownMenuGroup>
+              )}
             <DropdownMenuGroup>
-              <DropdownMenuItem>Share</DropdownMenuItem>
+              <DropdownMenuItem onClick={handleCopyLink}>
+                Share
+              </DropdownMenuItem>
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -177,6 +325,9 @@ export default function CollectionActionMenu({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {!isMyOwnCollection && !isCollaborator && (
+        <CirclePlus className="text-zinc-400 size-8 hover:text-zinc-200" />
+      )}
     </div>
   );
 }

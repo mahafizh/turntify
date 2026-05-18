@@ -9,11 +9,11 @@ import DashboardPage from "./pages/DashboardPage";
 import { useEffect } from "react";
 import ProfilePage from "./pages/ProfilePage";
 import { useUserStore } from "./stores/useUserStore";
-import { connectSocket, disconnectSocket } from "./lib/socket";
+import { getSocket } from "./lib/socket";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isLoaded, isSignedIn, user: clerkUser } = useUser();
-  
+
   if (!isLoaded) return <div>Loading...</div>;
 
   const userEmailAddress = clerkUser?.primaryEmailAddress?.emailAddress;
@@ -34,14 +34,11 @@ function App() {
     if (isSignedIn) fetchUser();
   }, [isSignedIn, fetchUser]);
 
+  // App.tsx
   useEffect(() => {
     if (user?._id) {
-      connectSocket(user._id);
+      getSocket(user._id);
     }
-
-    return () => {
-      disconnectSocket();
-    };
   }, [user?._id]);
 
   if (!isLoaded) return null;

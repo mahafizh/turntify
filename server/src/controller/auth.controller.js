@@ -35,7 +35,7 @@ export const authCallback = async (req, res) => {
         title: "Liked Songs",
         visibility: "private",
         createdBy: createdUser._id,
-        imageUrl: process.env.DEFAULT_IMAGE,
+        imageUrl: process.env.PLAYLIST_LIKED_SONG_IMAGE,
       });
 
       const createdPlaylist = await playlist.save({ session });

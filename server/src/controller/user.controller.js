@@ -8,6 +8,7 @@ import { AppError } from "../utils/ErrorHandler.js";
 import { uploadToCloudinary } from "../utils/UploadToCloudinary.js";
 import { deleteFromCloudinary } from "../utils/DeleteFromCloudinary.js";
 import { use } from "react";
+import { populate } from "dotenv";
 
 export const getAllUser = async (req, res, next) => {
   try {
@@ -64,6 +65,7 @@ export const updateUser = async (req, res, next) => {
 export const updateActivity = async (req, res, next) => {
   const userId = req.user._id;
   const { songId, isPlaying } = req.body;
+  const io = req.app.get("io");
 
   try {
     await User.findByIdAndUpdate(userId, {
@@ -74,17 +76,27 @@ export const updateActivity = async (req, res, next) => {
       $pull: { lastPlayed: { song: songId } },
     });
 
-    if (isPlaying) {
-      await User.findByIdAndUpdate(userId, {
-        $push: {
-          lastPlayed: {
-            $each: [{ song: songId, playedAt: new Date() }],
-            $position: 0,
-            $slice: 30,
-          },
+    await User.findByIdAndUpdate(userId, {
+      $pull: { lastPlayed: { song: songId } },
+    });
+
+    await User.findByIdAndUpdate(userId, {
+      $push: {
+        lastPlayed: {
+          $each: [{ song: songId, playedAt: new Date() }],
+          $position: 0,
+          $slice: 30,
         },
-      });
-    }
+      },
+    });
+
+    const fullSongData = await Song.findById(songId).populate("album", "title");
+
+    io.emit("friend_activity_update", {
+      userId,
+      isPlaying,
+      song: fullSongData,
+    });
 
     return successResponse(res, 204);
   } catch (error) {
@@ -92,7 +104,6 @@ export const updateActivity = async (req, res, next) => {
   }
 };
 
-// get /api/users/friends
 export const getFriend = async (req, res, next) => {
   const userId = req.user._id;
   try {
@@ -102,11 +113,19 @@ export const getFriend = async (req, res, next) => {
       populate: [
         {
           path: "currentPlaying.song",
-          select: "title performer imageUrl",
+          select: "title performer album imageUrl",
+          populate: {
+            path: "album",
+            select: "title",
+          },
         },
         {
           path: "lastPlayed.song",
-          select: "title performer imageUrl",
+          select: "title performer album imageUrl",
+          populate: {
+            path: "album",
+            select: "title",
+          },
         },
       ],
     });
@@ -178,6 +197,12 @@ export const getCollection = async (req, res, next) => {
     if (visibility) {
       collections = collections.filter((c) => c.visibility === visibility);
     }
+
+    collections.sort((a, b) => {
+      if (a.title === "Liked Songs") return -1;
+      if (b.title === "Liked Songs") return 1;
+      return 0;
+    });
     return successResponse(res, 200, collections);
   } catch (error) {
     next(error);
@@ -250,9 +275,22 @@ export const getCollectionById = async (req, res, next) => {
 export const checkLikedSong = async (req, res, next) => {
   const userId = req.user._id;
   const { songId } = req.params;
+
   try {
-    const songExists = await User.exists({ _id: userId, likedSongs: songId });
-    return successResponse(res, 200, { exists: !!songExists });
+    const playlist = await Playlist.findOne({
+      createdBy: userId,
+      title: "Liked Songs",
+    });
+
+    if (!playlist) {
+      throw new AppError("Liked playlist not found", 404);
+    }
+
+    const isLiked = playlist.songs.some(
+      (item) => item.song.toString() === songId,
+    );
+
+    return successResponse(res, 200, { exists: isLiked });
   } catch (error) {
     next(error);
   }
@@ -264,14 +302,14 @@ export const addSavedAlbum = async (req, res, next) => {
   try {
     const exist = await Album.exists({ _id: albumId });
     if (!exist) throw new AppError("Album not found", 404);
-    const updatedUser = await User.findByIdAndUpdate(
+    const user = await User.findByIdAndUpdate(
       userId,
       {
         $addToSet: { savedAlbums: albumId },
       },
       { new: true },
     );
-    return successResponse(res, 200, updatedUser);
+    return successResponse(res, 204);
   } catch (error) {
     next(error);
   }
@@ -283,7 +321,7 @@ export const removeSavedAlbum = async (req, res, next) => {
   try {
     const exist = await Album.exists({ _id: albumId });
     if (!exist) throw new AppError("Album not found", 404);
-    const updatedUser = await User.findByIdAndUpdate(
+    const user = await User.findByIdAndUpdate(
       userId,
       {
         $pull: { savedAlbums: albumId },
@@ -340,13 +378,11 @@ export const addLikedSong = async (req, res, next) => {
   try {
     const exist = await Song.exists({ _id: songId });
     if (!exist) throw new AppError("Song not found", 404);
-    const user = await User.findById(userId).select("likedPlaylist");
-    if (!user.likedPlaylist)
-      throw new AppError("Liked playlist not found", 404);
 
-    const updatedPlaylist = await Playlist.findByIdAndUpdate(
+    const playlist = await Playlist.findOneAndUpdate(
       {
-        _id: user.likedPlaylist,
+        createdBy: userId,
+        title: "Liked Songs",
         "songs.song": { $ne: songId },
       },
       {
@@ -359,6 +395,11 @@ export const addLikedSong = async (req, res, next) => {
       },
       { new: true },
     );
+
+    if (!playlist) {
+      throw new AppError("Liked songs playlist not found", 404);
+    }
+
     return successResponse(res, 204);
   } catch (error) {
     next(error);
@@ -371,13 +412,11 @@ export const removeLikedSong = async (req, res, next) => {
   try {
     const exist = await Song.exists({ _id: songId });
     if (!exist) throw new AppError("Song not found", 404);
-    const user = await User.findById(userId).select("likedPlaylist");
-    if (!user.likedPlaylist)
-      throw new AppError("Liked playlist not found", 404);
 
-    const updatedPlaylist = await Playlist.findByIdAndUpdate(
+    const playlist = await Playlist.findOneAndUpdate(
       {
-        _id: user.likedPlaylist,
+        createdBy: userId,
+        title: "Liked Songs",
         "songs.song": songId,
       },
       {
@@ -385,6 +424,11 @@ export const removeLikedSong = async (req, res, next) => {
       },
       { new: true },
     );
+
+    if (!playlist) {
+      throw new AppError("Liked songs playlist not found", 404);
+    }
+
     return successResponse(res, 204);
   } catch (error) {
     next(error);

@@ -16,17 +16,19 @@ const PORT = process.env.PORT || 5000;
 const app = express();
 const server = http.createServer(app);
 
-app.use(cors({
+app.use(
+  cors({
     origin: process.env.CLIENT_URL,
     credentials: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
-}));
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  }),
+);
 
 const io = new Server(server, {
   cors: {
     origin: process.env.CLIENT_URL,
     methods: ["GET", "POST"],
-    credentials: true
+    credentials: true,
   },
 });
 
@@ -52,16 +54,17 @@ const userSockets = new Map();
 io.on("connection", (socket) => {
   const userId = socket.handshake.query.userId;
   if (userId) userSockets.set(userId, socket.id);
-
+  
   socket.on("update_activity", (data) => {
-    socket.broadcast.emit("friend_activity_update", data);
+    io.emit("friend_activity_update", data);
   });
-
+  
   socket.on("disconnect", () => {
     userSockets.delete(userId);
   });
 });
 
+app.set("io", io);
 app.use("/api", routes);
 app.use(errorHandler);
 

@@ -3,12 +3,15 @@ import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useSocialStore } from "@/stores/useSocialStore";
 import { useUser } from "@clerk/clerk-react";
-import { Music, Users, Clock } from "lucide-react";
+import { Music, Users, Clock, DotIcon, Disc } from "lucide-react";
 import { useEffect } from "react";
 import { getSocket } from "@/lib/socket"; // Import socket helper Anda
 import { Link } from "react-router";
+import { useUserStore } from "@/stores/useUserStore";
+import { formatTime } from "@/lib/formatTime";
 
 export default function RightSidebar() {
+  const { user } = useUserStore();
   const { friends, fetchFriend, updateFriendActivity } = useSocialStore();
   const { isSignedIn } = useUser();
 
@@ -17,17 +20,21 @@ export default function RightSidebar() {
   }, [isSignedIn, fetchFriend]);
 
   useEffect(() => {
-    const socket = getSocket();
+    if (!user?._id) return;
+
+    const socket = getSocket(user._id);
     if (!socket) return;
 
-    socket.on("friend_activity_update", (data) => {
+    const handleUpdate = (data: any) => {
       updateFriendActivity(data);
-    });
+    };
+
+    socket.on("friend_activity_update", handleUpdate);
 
     return () => {
-      socket.off("friend_activity_update");
+      socket.off("friend_activity_update", handleUpdate);
     };
-  }, [updateFriendActivity]);
+  }, [user?._id, updateFriendActivity]);
 
   return (
     <div className="h-[calc(100vh-120px)] bg-zinc-900 rounded-md flex flex-col p-4 ">
@@ -68,31 +75,59 @@ export default function RightSidebar() {
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <Link to={`${window.location.origin}/profile/${friend._id}`} className="hover:underline text-sm font-medium truncate text-zinc-100">
+                        <Link
+                          to={`${window.location.origin}/profile/${friend._id}`}
+                          className="hover:underline text-sm font-medium truncate text-zinc-100"
+                        >
                           {friend.fullName}
                         </Link>
                         {isPlaying ? (
                           <Music className="size-3 text-emerald-500" />
+                        ) : lastPlayed ? (
+                          <div className="text-xs text-zinc-400">
+                            {formatTime(new Date(lastPlayed?.playedAt || 0))}
+                          </div>
                         ) : (
-                          <Clock className="size-3 text-zinc-500" />
+                          <Clock className="size-3 text-zinc-400" />
                         )}
                       </div>
 
                       {isPlaying && currentSong ? (
-                        <div className="mt-1">
-                          <div className="flex items-center text-xs text-white truncate hover:underline cursor-pointer">
-                            {currentSong.title}
+                        <>
+                          <div className="flex">
+                            <div className="flex items-center text-xs text-zinc-400 truncate hover:underline cursor-pointer">
+                              {currentSong.title}
+                            </div>
+                            <DotIcon className="-mx-1 size-5" />
+                            <div className="flex items-center text-xs text-zinc-400 truncate">
+                              {currentSong.performer}
+                            </div>
                           </div>
-                          <div className="flex items-center text-[11px] text-zinc-400 truncate">
-                            {currentSong.performer}
+                          <div className="flex items-center gap-1">
+                            <Disc className="size-3.5 text-zinc-400" />
+                            <div className="text-xs text-zinc-400">
+                              {currentSong.album?.title || "No Album"}
+                            </div>
                           </div>
-                        </div>
+                        </>
                       ) : lastPlayed ? (
-                        <div className="mt-1">
-                          <p className="text-[11px] text-zinc-500 italic">
-                            Last played: {lastPlayed.song?.title}
-                          </p>
-                        </div>
+                        <>
+                          <div className="flex">
+                            <div className="flex items-center text-xs text-zinc-400 truncate hover:underline cursor-pointer">
+                              {lastPlayed.song?.title}
+                            </div>
+                            <DotIcon className="-mx-1 size-5" />
+                            <div className="flex items-center text-xs text-zinc-400 truncate">
+                              {lastPlayed.song?.performer}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Disc className="size-3.5 text-zinc-400" />
+                            <div className="text-xs text-zinc-400">
+                              {lastPlayed.song?.album?.title || "No Album"}
+                            </div>
+                          </div>
+                        </>
                       ) : (
                         <p className="mt-1 text-[11px] text-zinc-600">Idle</p>
                       )}

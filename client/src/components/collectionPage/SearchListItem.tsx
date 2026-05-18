@@ -1,8 +1,8 @@
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { usePlaylistStore } from "@/stores/usePlaylistStore";
 import { toast } from "sonner";
 import { useNavigate } from "react-router";
+import { useSongStore } from "@/stores/useSongStore";
 
 interface SearchListItemProps {
   title: string;
@@ -25,7 +25,7 @@ export default function SearchListItem({
   songId,
   collectionId,
 }: SearchListItemProps) {
-  const { AddSongToPlaylist } = usePlaylistStore();
+  const {AddSongToPlaylist} = useSongStore()
   const navigate = useNavigate();
   const handleRefresh = () => navigate(0);
 

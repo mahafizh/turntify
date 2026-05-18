@@ -28,7 +28,6 @@ export default function Homepage() {
   useEffect(() => {
     if (featured.length > 0 && trending.length > 0) {
       const allSongs = [...featured, ...trending];
-      console.log(allSongs);
       initQueue(allSongs);
     }
   }, [initQueue, featured, trending]);
