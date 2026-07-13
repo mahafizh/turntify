@@ -1,12 +1,17 @@
 import { usePlayerStore } from "@/stores/usePlayerStore";
 import { useEffect, useRef } from "react";
+import { axiosInstance } from "@/lib/axios";
+import { getSocket } from "@/lib/socket";
+import { useUserStore } from "@/stores/useUserStore";
 
 export default function AudioPlayer() {
+  const { user } = useUserStore();
   const audioRef = useRef<HTMLAudioElement>(null);
   const prevSongRef = useRef<string | null>(null);
 
-  const { currentSong, isPlaying, playNext } = usePlayerStore();
-  
+  const { currentSong, isPlaying, playNext, incrementPlayCount, loopMode } =
+    usePlayerStore();
+
   useEffect(() => {
     if (isPlaying) {
       audioRef.current?.play();
@@ -19,11 +24,21 @@ export default function AudioPlayer() {
     const audio = audioRef.current;
 
     const handleEnded = () => {
-      playNext();
+      if (currentSong?._id) incrementPlayCount(currentSong._id);
+
+      if (loopMode === "one") {
+        if (audio) {
+          audio.currentTime = 0;
+          audio.play();
+        }
+      } else {
+        playNext();
+      }
     };
+
     audio?.addEventListener("ended", handleEnded);
     return () => audio?.removeEventListener("ended", handleEnded);
-  }, [playNext]);
+  }, [playNext, currentSong?._id, loopMode]);
 
   useEffect(() => {
     if (!audioRef.current || !currentSong) return;
@@ -40,6 +55,41 @@ export default function AudioPlayer() {
       }
     }
   }, [currentSong, isPlaying]);
+
+  useEffect(() => {
+    if (!user || !currentSong) return;
+
+    const updateActivity = async () => {
+      try {
+        await axiosInstance.post("/users/update-activity", {
+          songId: currentSong._id,
+          isPlaying,
+        });
+
+        const activeSocket = getSocket();
+
+        if (activeSocket) {
+          activeSocket.emit("update_activity", {
+            userId: user._id,
+            activity: {
+              isPlaying,
+              song: {
+                title: currentSong.title,
+                performer: currentSong.performer,
+                imageUrl: currentSong.imageUrl,
+                album: { title: currentSong.album?.title },
+              },
+            },
+          });
+        }
+      } catch (error) {
+        console.error("Failed to update activity", error);
+      }
+    };
+
+    const timeoutId = setTimeout(updateActivity, 500);
+    return () => clearTimeout(timeoutId);
+  }, [isPlaying, currentSong?._id, user?._id]);
 
   return <audio ref={audioRef} />;
 }

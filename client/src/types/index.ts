@@ -3,12 +3,19 @@ export interface Genre {
   title: string;
 }
 
+export interface Stats {
+  totalSongs: number;
+  totalAlbums: number;
+  totalListeners: number;
+}
+
 export interface Album {
   _id: string;
   title: string;
   visibility: "private" | "public";
   type: "ep" | "single" | "album";
-  createdBy: string;
+  songs: Song[];
+  createdBy: User;
   imageUrl: string;
   createdAt: Date;
   updatedAt: Date;
@@ -18,8 +25,8 @@ export interface Playlist {
   _id: string;
   title: string;
   visibility: "private" | "public";
-  createdBy: string;
-  collaborators: string;
+  createdBy: Pick<User, "fullName" | "_id">;
+  collaborators: Pick<User, "fullName" | "_id">;
   imageUrl: string;
   songs: {
     _id: string;
@@ -42,13 +49,12 @@ export interface Song {
   genre: Genre[];
   duration: number;
   releaseYear: number;
-  createdBy: string;
+  createdBy: User;
   album: Album | null;
   played: number;
+  imageUrl: string;
   createdAt: Date;
   updatedAt: Date;
-  imageUrl: string | null;
-  addedBy: string | null;
 }
 
 export interface Collection {
@@ -56,11 +62,14 @@ export interface Collection {
   title: string;
   creator: string;
   type: "album" | "playlist";
+  visibility: "private" | "public";
+  createdAt: string;
   imageUrl: string;
 }
 
 export interface CollectionUser {
   _id: string;
+  imageUrl: string;
   fullName: string;
 }
 
@@ -72,22 +81,53 @@ export interface CurrentCollection {
   collection: "album" | "playlist";
   createdBy: CollectionUser;
   createdAt: string;
-  collaborators?: CollectionUser;
+  collaborators?: CollectionUser[];
   description?: string;
   duration: number;
   imageUrl: string;
   songs: Song[];
 }
 
+interface lastPlayed {
+  song: Song | null;
+  playedAt: Date;
+}
+
 export interface User {
   _id: string;
   fullName: string;
-  clerkId: string;
   imageUrl: string;
+  friends: Friend[];
+  savedAlbums: Album[];
+  playlists: Playlist[];
+  likedSongs: Song[];
+  currentPlaying: {
+    song: Song | null;
+    isPlaying: boolean;
+  };
+  lastPlayed: lastPlayed[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface Friend {
   _id: string;
   fullName: string;
   imageUrl: string;
+  currentPlaying: {
+    song: Song | null;
+    isPlaying: boolean;
+  };
+  lastPlayed: lastPlayed[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Message {
+  _id: string;
+  senderId: string;
+  receiverId: string;
+  content: string;
+  createdAt: Date;
+  updatedAt: Date;
 }

@@ -7,6 +7,8 @@ import { Playlist } from "../models/playlist.model.js";
 import { AppError } from "../utils/ErrorHandler.js";
 import { uploadToCloudinary } from "../utils/UploadToCloudinary.js";
 import { deleteFromCloudinary } from "../utils/DeleteFromCloudinary.js";
+import { getIO } from "../utils/Socket.js";
+import { Message } from "../models/message.model.js";
 
 export const getAllUser = async (req, res, next) => {
   try {
@@ -24,10 +26,9 @@ export const getUserById = async (req, res, next) => {
   const { id } = req.params;
   try {
     const user = await User.findById(id)
-      .populate("friends", "fullName")
-      .populate("savedAlbums", "title")
-      .populate("playlists", "title")
-      .populate("likedSongs", "title");
+      .select("-clerkId")
+      .populate({ path: "friends", select: "fullName imageUrl" })
+      .populate({ path: "playlists", select: "title imageUrl visibility" });
     if (!user) {
       throw new AppError("User not found", 404);
     }
@@ -61,15 +62,95 @@ export const updateUser = async (req, res, next) => {
   }
 };
 
+export const updateActivity = async (req, res, next) => {
+  const userId = req.user._id;
+  const { songId, isPlaying } = req.body;
+  const io = getIO();
+
+  try {
+    await User.findByIdAndUpdate(userId, {
+      $set: {
+        "currentPlaying.song": songId,
+        "currentPlaying.isPlaying": isPlaying,
+      },
+      $pull: { lastPlayed: { song: songId } },
+    });
+
+    await User.findByIdAndUpdate(userId, {
+      $pull: { lastPlayed: { song: songId } },
+    });
+
+    await User.findByIdAndUpdate(userId, {
+      $push: {
+        lastPlayed: {
+          $each: [{ song: songId, playedAt: new Date() }],
+          $position: 0,
+          $slice: 30,
+        },
+      },
+    });
+
+    const fullSongData = await Song.findById(songId).populate("album", "title");
+    if (io) {
+      io.emit("activity_update", {
+        userId,
+        activity: {
+          isPlaying,
+          song: fullSongData,
+        },
+      });
+    } else {
+      console.warn("Socket.io instance is not ready yet!");
+    }
+
+    return successResponse(res, 204);
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getFriend = async (req, res, next) => {
   const userId = req.user._id;
   try {
-    const user = await User.findById(userId).populate(
-      "friends",
-      "fullName imageUrl",
-    );
-    const friends = user.friends;
-    return successResponse(res, 200, friends);
+    const user = await User.findById(userId).populate({
+      path: "friends",
+      select: "fullName imageUrl currentPlaying lastPlayed",
+      populate: [
+        {
+          path: "currentPlaying.song",
+          select: "title performer album imageUrl",
+          populate: {
+            path: "album",
+            select: "title",
+          },
+        },
+        {
+          path: "lastPlayed.song",
+          select: "title performer album imageUrl",
+          populate: {
+            path: "album",
+            select: "title",
+          },
+        },
+      ],
+    });
+
+    if (!user) return next(new Error("User not found"));
+    const friendsData = user.friends.map((friend) => {
+      const friendObj = friend.toObject();
+
+      if (friendObj.lastPlayed && friendObj.lastPlayed.length > 0) {
+        const sortedHistory = friendObj.lastPlayed.sort(
+          (a, b) =>
+            new Date(b.playedAt).getTime() - new Date(a.playedAt).getTime(),
+        );
+        friendObj.lastPlayed = [sortedHistory[0]];
+      }
+
+      return friendObj;
+    });
+
+    return successResponse(res, 200, friendsData);
   } catch (error) {
     next(error);
   }
@@ -77,13 +158,13 @@ export const getFriend = async (req, res, next) => {
 
 export const getCollection = async (req, res, next) => {
   const userId = req.user._id;
-  const { type } = req.query;
+  const { type, visibility } = req.query;
   try {
     const user = await User.findById(userId)
       .select("savedAlbums")
       .populate({
         path: "savedAlbums",
-        select: "title imageUrl createdBy",
+        select: "title imageUrl visibility createdBy",
         populate: {
           path: "createdBy",
           select: "fullName",
@@ -92,15 +173,16 @@ export const getCollection = async (req, res, next) => {
     const playlists = await Playlist.find({
       $or: [{ createdBy: userId }, { collaborators: userId }],
     })
-      .select("title imageUrl createdBy")
+      .select("title imageUrl visibility createdBy")
       .populate("createdBy", "fullName");
 
-    const collections = [
+    let collections = [
       ...user.savedAlbums.map((album) => ({
         _id: album._id,
         title: album.title,
         creator: album.createdBy.fullName,
         imageUrl: album.imageUrl,
+        visibility: album.visibility,
         type: "album",
       })),
       ...playlists.map((playlist) => ({
@@ -108,14 +190,25 @@ export const getCollection = async (req, res, next) => {
         title: playlist.title,
         creator: playlist.createdBy.fullName,
         imageUrl: playlist.imageUrl,
+        visibility: playlist.visibility,
         type: "playlist",
       })),
     ];
-    let filteredCollection = collections;
-    if (type === "album" || type === "playlist") {
-      filteredCollection = collections.filter((c) => c.type === type);
+
+    if (type) {
+      collections = collections.filter((c) => c.type === type);
     }
-    return successResponse(res, 200, filteredCollection);
+
+    if (visibility) {
+      collections = collections.filter((c) => c.visibility === visibility);
+    }
+
+    collections.sort((a, b) => {
+      if (a.title === "Liked Songs") return -1;
+      if (b.title === "Liked Songs") return 1;
+      return 0;
+    });
+    return successResponse(res, 200, collections);
   } catch (error) {
     next(error);
   }
@@ -131,7 +224,7 @@ export const getCollectionById = async (req, res, next) => {
     if (albumExist) {
       const album = await Album.findById(id).populate({
         path: "createdBy",
-        select: "fullName",
+        select: "fullName imageUrl",
       });
       const songs = await Song.find({ album: id }).populate("album");
       const normalizedSongs = songs.map((song) => {
@@ -159,13 +252,13 @@ export const getCollectionById = async (req, res, next) => {
             },
           },
         })
-        .populate({ path: "createdBy", select: "fullName" })
-        .populate({ path: "collaborators", select: "fullName" });
+        .populate({ path: "createdBy", select: "fullName imageUrl" })
+        .populate({ path: "collaborators", select: "fullName imageUrl" });
       const normalizedSongs = playlist.songs.map((s) => ({
         ...s.song.toObject(),
         imageUrl: s.song.album?.imageUrl || null,
-        addedBy: s.addedBy,
-        createdAt: s.addedAt,
+        addedBy: s.addedBy || null,
+        createdAt: s.addedAt || null,
       }));
 
       normalizedSongs.forEach((song) => {
@@ -187,9 +280,22 @@ export const getCollectionById = async (req, res, next) => {
 export const checkLikedSong = async (req, res, next) => {
   const userId = req.user._id;
   const { songId } = req.params;
+
   try {
-    const songExists = await User.exists({ _id: userId, likedSongs: songId });
-    return successResponse(res, 200, { exists: !!songExists });
+    const playlist = await Playlist.findOne({
+      createdBy: userId,
+      title: "Liked Songs",
+    });
+
+    if (!playlist) {
+      throw new AppError("Liked playlist not found", 404);
+    }
+
+    const isLiked = playlist.songs.some(
+      (item) => item.song.toString() === songId,
+    );
+
+    return successResponse(res, 200, { exists: isLiked });
   } catch (error) {
     next(error);
   }
@@ -201,14 +307,14 @@ export const addSavedAlbum = async (req, res, next) => {
   try {
     const exist = await Album.exists({ _id: albumId });
     if (!exist) throw new AppError("Album not found", 404);
-    const updatedUser = await User.findByIdAndUpdate(
+    const user = await User.findByIdAndUpdate(
       userId,
       {
         $addToSet: { savedAlbums: albumId },
       },
       { new: true },
     );
-    return successResponse(res, 200, updatedUser);
+    return successResponse(res, 204);
   } catch (error) {
     next(error);
   }
@@ -220,14 +326,14 @@ export const removeSavedAlbum = async (req, res, next) => {
   try {
     const exist = await Album.exists({ _id: albumId });
     if (!exist) throw new AppError("Album not found", 404);
-    const updatedUser = await User.findByIdAndUpdate(
+    const user = await User.findByIdAndUpdate(
       userId,
       {
         $pull: { savedAlbums: albumId },
       },
       { new: true },
     );
-    return successResponse(res, 200, updatedUser);
+    return successResponse(res, 204);
   } catch (error) {
     next(error);
   }
@@ -246,7 +352,7 @@ export const addPlaylist = async (req, res, next) => {
       },
       { new: true },
     );
-    return successResponse(res, 200, updatedUser);
+    return successResponse(res, 204);
   } catch (error) {
     next(error);
   }
@@ -265,7 +371,7 @@ export const removePlaylist = async (req, res, next) => {
       },
       { new: true },
     );
-    return successResponse(res, 200, updatedUser);
+    return successResponse(res, 204);
   } catch (error) {
     next(error);
   }
@@ -277,14 +383,29 @@ export const addLikedSong = async (req, res, next) => {
   try {
     const exist = await Song.exists({ _id: songId });
     if (!exist) throw new AppError("Song not found", 404);
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
+
+    const playlist = await Playlist.findOneAndUpdate(
       {
-        $addToSet: { likedSongs: songId },
+        createdBy: userId,
+        title: "Liked Songs",
+        "songs.song": { $ne: songId },
+      },
+      {
+        $push: {
+          songs: {
+            song: songId,
+            addedBy: userId,
+          },
+        },
       },
       { new: true },
     );
-    return successResponse(res, 200, updatedUser);
+
+    if (!playlist) {
+      throw new AppError("Liked songs playlist not found", 404);
+    }
+
+    return successResponse(res, 204);
   } catch (error) {
     next(error);
   }
@@ -296,14 +417,24 @@ export const removeLikedSong = async (req, res, next) => {
   try {
     const exist = await Song.exists({ _id: songId });
     if (!exist) throw new AppError("Song not found", 404);
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
+
+    const playlist = await Playlist.findOneAndUpdate(
       {
-        $pull: { likedSongs: songId },
+        createdBy: userId,
+        title: "Liked Songs",
+        "songs.song": songId,
+      },
+      {
+        $pull: { songs: { song: songId } },
       },
       { new: true },
     );
-    return successResponse(res, 200, updatedUser);
+
+    if (!playlist) {
+      throw new AppError("Liked songs playlist not found", 404);
+    }
+
+    return successResponse(res, 204);
   } catch (error) {
     next(error);
   }
@@ -324,7 +455,7 @@ export const addFriend = async (req, res, next) => {
       },
       { new: true },
     );
-    return successResponse(res, 200, updatedUser);
+    return successResponse(res, 204);
   } catch (error) {
     next(error);
   }
@@ -343,7 +474,28 @@ export const removeFriend = async (req, res, next) => {
       },
       { new: true },
     );
-    return successResponse(res, 200, updatedUser);
+    return successResponse(res, 204);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getMessage = async (req, res, next) => {
+  const myId = req.user._id;
+  const { userId } = req.params;
+
+  try {
+    const user = await User.exists({ _id: userId });
+    if (!user) throw new AppError("User not found", 404);
+
+    const messages = await Message.find({
+      $or: [
+        { senderId: myId, receiverId: userId },
+        { senderId: userId, receiverId: myId },
+      ],
+    }).sort({ createdAt: 1 });
+
+    return successResponse(res, 200, messages);
   } catch (error) {
     next(error);
   }
