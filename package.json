@@ -7,7 +7,7 @@
     "node": "22.x"
   },
   "scripts": {
-    "build": "npm ci --prefix client && npm run build --prefix client && npm ci --prefix server",
+    "build": "cd client && npm ci && npm run build && cd ../server && npm ci",
     "start": "npm start --prefix server"
   },
   "repository": {
