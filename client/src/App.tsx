@@ -10,6 +10,7 @@ import { useEffect } from "react";
 import ProfilePage from "./pages/ProfilePage";
 import { useUserStore } from "./stores/useUserStore";
 import { getSocket } from "./lib/socket";
+import { useSocketStore } from "./stores/useSocketStore";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isLoaded, isSignedIn, user: clerkUser } = useUser();
@@ -29,15 +30,16 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function App() {
   const { user, fetchUser } = useUserStore();
   const { isSignedIn, isLoaded } = useUser();
+  const { initSocket } = useSocketStore();
 
   useEffect(() => {
     if (isSignedIn) fetchUser();
   }, [isSignedIn, fetchUser]);
 
-  // App.tsx
   useEffect(() => {
     if (user?._id) {
       getSocket(user._id);
+      initSocket(user._id);
     }
   }, [user?._id]);
 

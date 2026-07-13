@@ -7,8 +7,8 @@ import { Playlist } from "../models/playlist.model.js";
 import { AppError } from "../utils/ErrorHandler.js";
 import { uploadToCloudinary } from "../utils/UploadToCloudinary.js";
 import { deleteFromCloudinary } from "../utils/DeleteFromCloudinary.js";
-import { use } from "react";
-import { populate } from "dotenv";
+import { getIO } from "../utils/Socket.js";
+import { Message } from "../models/message.model.js";
 
 export const getAllUser = async (req, res, next) => {
   try {
@@ -65,7 +65,7 @@ export const updateUser = async (req, res, next) => {
 export const updateActivity = async (req, res, next) => {
   const userId = req.user._id;
   const { songId, isPlaying } = req.body;
-  const io = req.app.get("io");
+  const io = getIO();
 
   try {
     await User.findByIdAndUpdate(userId, {
@@ -91,12 +91,17 @@ export const updateActivity = async (req, res, next) => {
     });
 
     const fullSongData = await Song.findById(songId).populate("album", "title");
-
-    io.emit("friend_activity_update", {
-      userId,
-      isPlaying,
-      song: fullSongData,
-    });
+    if (io) {
+      io.emit("activity_update", {
+        userId,
+        activity: {
+          isPlaying,
+          song: fullSongData,
+        },
+      });
+    } else {
+      console.warn("Socket.io instance is not ready yet!");
+    }
 
     return successResponse(res, 204);
   } catch (error) {
@@ -470,6 +475,27 @@ export const removeFriend = async (req, res, next) => {
       { new: true },
     );
     return successResponse(res, 204);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getMessage = async (req, res, next) => {
+  const myId = req.user._id;
+  const { userId } = req.params;
+
+  try {
+    const user = await User.exists({ _id: userId });
+    if (!user) throw new AppError("User not found", 404);
+
+    const messages = await Message.find({
+      $or: [
+        { senderId: myId, receiverId: userId },
+        { senderId: userId, receiverId: myId },
+      ],
+    }).sort({ createdAt: 1 });
+
+    return successResponse(res, 200, messages);
   } catch (error) {
     next(error);
   }

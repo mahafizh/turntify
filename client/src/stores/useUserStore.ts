@@ -1,5 +1,5 @@
 import { axiosInstance } from "@/lib/axios";
-import type { User } from "@/types";
+import type { Message, User } from "@/types";
 import { create } from "zustand";
 
 interface UserStore {
@@ -7,6 +7,7 @@ interface UserStore {
   isLoading: boolean;
   user: User | null;
   selectedUser: User | null;
+  message: Message[]
 
   fetchUser: (id?: string) => Promise<void>;
   updateUser: (
@@ -16,6 +17,7 @@ interface UserStore {
       imageFile?: File;
     },
   ) => Promise<void>;
+  sendMessage: (receiverId: string, senderId: string, content: string) => void
 }
 
 export const useUserStore = create<UserStore>((set) => ({
@@ -23,6 +25,7 @@ export const useUserStore = create<UserStore>((set) => ({
   isLoading: false,
   user: null,
   selectedUser: null,
+  message: [],
 
   fetchUser: async (id) => {
     set({ isLoading: true, error: null });
@@ -61,5 +64,9 @@ export const useUserStore = create<UserStore>((set) => ({
     } finally {
       set({ isLoading: false });
     }
+  },
+
+  sendMessage: async() => {
+
   },
 }));

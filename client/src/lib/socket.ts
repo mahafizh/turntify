@@ -1,13 +1,14 @@
 import { io, Socket } from "socket.io-client";
 
-const SOCKET_URL = import.meta.env.VITE_API_URL;
-
+const SOCKET_URL = import.meta.env.VITE_NODE_ENV === "development" ? "http://localhost:5000" : "/";
 let socket: Socket | null = null;
 
 export const getSocket = (userId?: string) => {
   if (!socket && userId) {
     console.log("Initializing socket connection for user:", userId);
     socket = io(SOCKET_URL, {
+      autoConnect: false,
+      withCredentials: true,
       query: { userId },
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,

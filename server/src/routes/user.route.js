@@ -11,6 +11,7 @@ import {
   getCollection,
   getCollectionById,
   getFriend,
+  getMessage,
   getUserById,
   removeFriend,
   removeLikedSong,
@@ -40,6 +41,8 @@ router.patch("/songs/:songId", removeLikedSong);
 
 router.get("/collections", getCollection);
 router.get("/collections/:id", getCollectionById);
+
+router.get("/messages/:userId", getMessage)
 
 router.get("/", getAllUser);
 router.get("/:id", getUserById);

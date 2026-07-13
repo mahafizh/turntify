@@ -5,7 +5,7 @@ import { useSocialStore } from "@/stores/useSocialStore";
 import { useUser } from "@clerk/clerk-react";
 import { Music, Users, Clock, DotIcon, Disc } from "lucide-react";
 import { useEffect } from "react";
-import { getSocket } from "@/lib/socket"; // Import socket helper Anda
+import { getSocket } from "@/lib/socket";
 import { Link } from "react-router";
 import { useUserStore } from "@/stores/useUserStore";
 import { formatTime } from "@/lib/formatTime";
@@ -25,14 +25,26 @@ export default function RightSidebar() {
     const socket = getSocket(user._id);
     if (!socket) return;
 
-    const handleUpdate = (data: any) => {
-      updateFriendActivity(data);
+    const handleUpdate = (data: { userId: string; activity: any }) => {
+      if (
+        data.activity &&
+        typeof data.activity === "object" &&
+        "song" in data.activity
+      ) {
+        const formattedData = {
+          userId: data.userId,
+          isPlaying: data.activity.isPlaying,
+          song: data.activity.song,
+        };
+
+        updateFriendActivity(formattedData);
+      }
     };
 
-    socket.on("friend_activity_update", handleUpdate);
+    socket.on("activity_update", handleUpdate);
 
     return () => {
-      socket.off("friend_activity_update", handleUpdate);
+      socket.off("activity_update", handleUpdate);
     };
   }, [user?._id, updateFriendActivity]);
 

@@ -6,7 +6,6 @@ import { useUserStore } from "@/stores/useUserStore";
 
 export default function AudioPlayer() {
   const { user } = useUserStore();
-  const socket = getSocket();
   const audioRef = useRef<HTMLAudioElement>(null);
   const prevSongRef = useRef<string | null>(null);
 
@@ -67,15 +66,19 @@ export default function AudioPlayer() {
           isPlaying,
         });
 
-        if (socket) {
-          socket.emit("update_activity", {
+        const activeSocket = getSocket();
+
+        if (activeSocket) {
+          activeSocket.emit("update_activity", {
             userId: user._id,
-            isPlaying,
-            song: {
-              title: currentSong.title,
-              performer: currentSong.performer,
-              imageUrl: currentSong.imageUrl,
-              album: { title: currentSong.album?.title },
+            activity: {
+              isPlaying,
+              song: {
+                title: currentSong.title,
+                performer: currentSong.performer,
+                imageUrl: currentSong.imageUrl,
+                album: { title: currentSong.album?.title },
+              },
             },
           });
         }

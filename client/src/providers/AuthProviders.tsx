@@ -2,7 +2,6 @@ import SkeletonLayout from "@/layout/components/SkeletonLayout";
 import { axiosInstance, setTokenGetter } from "@/lib/axios";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useAuth } from "@clerk/clerk-react";
-import { Loader } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export default function AuthProviders({
