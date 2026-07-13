@@ -1,5 +1,4 @@
 import { Outlet } from "react-router";
-// import Navbar from "@/components/Navbar";
 import LeftSidebar from "@/layout/components/LeftSidebar";
 import RightSidebar from "@/layout/components/RightSidebar";
 import { Group, Panel, Separator } from "react-resizable-panels";

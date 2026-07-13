@@ -20,7 +20,7 @@ router.patch("/:id", updatePlaylist);
 router.delete("/:id", deletePlaylist);
 router.get("/:id", getPlaylistById);
 
-router.post("/:playlistId/users/:collaboratorId", addCollaboratorToPlaylist);
+router.patch("/:playlistId/users/:collaboratorId", addCollaboratorToPlaylist);
 router.delete("/:playlistId/users/:collaboratorId", removeCollaboratorFromPlaylist);
 
 export default router;

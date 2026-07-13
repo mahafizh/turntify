@@ -9,13 +9,67 @@ import { AppError } from "../utils/ErrorHandler.js";
 import { User } from "../models/user.model.js";
 dotenv.config();
 
-export const getAlbum = async (req, res, next) => {
+export const getMadeForYouAlbums = async (req, res, next) => {
   try {
-    const album = await Album.find();
-    // if (album.length === 0) success("Album is empty", 200);
-    return successResponse(res, 200, album);
+    const albums = await Album.aggregate([
+      {
+        $sample: { size: 6 },
+      },
+      {
+        $lookup: {
+          from: "songs",
+          localField: "_id",
+          foreignField: "album",
+          as: "songs",
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "createdBy",
+          foreignField: "_id",
+          as: "createdBy",
+        },
+      },
+      {
+        $unwind: {
+          path: "$createdBy",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $project: {
+          "createdBy.imageUrl": 0,
+          "createdBy.clerkId": 0,
+          "createdBy.friends": 0,
+          "createdBy.savedAlbums": 0,
+          "createdBy.playlists": 0,
+          "createdBy.likedSongs": 0,
+          "createdBy.password": 0,
+          "createdBy.createdAt": 0,
+          "createdBy.updatedAt": 0,
+          "createdBy.email": 0,
+        },
+      },
+    ]);
+
+    return successResponse(res, 200, albums);
   } catch (error) {
-    console.error(error);
+    next(error);
+  }
+};
+
+export const getAlbum = async (req, res, next) => {
+  const { userId } = req.query;
+  try {
+    const query = userId ? { createdBy: userId } : {};
+
+    const albums = await Album.find(query)
+      .sort({ createdAt: -1 })
+      .populate({ path: "songs" });
+
+    return successResponse(res, 200, albums);
+  } catch (error) {
     next(error);
   }
 };
