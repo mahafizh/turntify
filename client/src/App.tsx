@@ -1,6 +1,6 @@
 import { AuthenticateWithRedirectCallback, useUser } from "@clerk/clerk-react";
 import { Routes, Route, Navigate, Outlet } from "react-router";
-import HomePage from "./pages/HomePage";
+import HomePage from "./pages/Homepage";
 import AuthCallback from "./pages/AuthCallbackPage";
 import MainLayout from "./layout/MainLayout";
 import ChatPage from "./pages/ChatPage";
