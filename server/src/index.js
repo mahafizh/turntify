@@ -31,7 +31,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(
   clerkMiddleware({
-    authorizedParties: ["http://localhost:5173"],
+    authorizedParties: ["http://localhost:5173", process.env.CLIENT_URL],
   }),
 );
 
@@ -68,8 +68,9 @@ app.use(errorHandler);
 
 if (process.env.NODE_ENV === "production") {
   app.use(express.static(path.join(__dirname, "../client/dist")));
-  app.get("*", (req, res) => {
-    res.sendFile(path.resolve(__dirname, "../client", "dist", "index.html"));
+
+  app.use((req, res) => {
+    res.sendFile(path.resolve(__dirname, "../client/dist/index.html"));
   });
 }
 
